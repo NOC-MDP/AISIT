@@ -86,7 +86,7 @@ class DatasetSpec:
 
 
 ML_dataset = DatasetSpec(
-    model_dir = "glodap_models",
+    model_dir ="../glodap_models",
     input_data = "window_data_from_GLODAPv2.2023.csv",
     header = 0,
     salinity_field = "SALNTY [PSS-78]",
