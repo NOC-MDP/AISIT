@@ -7,7 +7,7 @@ import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 
 # --- Load CSV ---
-df = pd.read_csv("input_data/NASA_Global_Seawater_Oxygen-18_Database_clean.csv")
+df = pd.read_csv("../input_data/NASA_Global_Seawater_Oxygen-18_Database_clean.csv")
 
 # --- Clean data ---
 # Replace missing or placeholder values (like '**') with NaN

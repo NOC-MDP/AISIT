@@ -15,7 +15,7 @@ dt_format = "yyyy-mm-ddThh:mm:ss.sss"
 temperature_field = "TEMPERATURE [DEG C]"
 
 # --- Load CSV ---
-df = pd.read_csv("input_data/window_data_from_GLODAPv2.2023.txt", header=17)
+df = pd.read_csv("input_data/d.txt", header=17)
 
 # --- Clean data ---
 # Replace missing or placeholder values (like '**') with NaN
@@ -117,3 +117,6 @@ fig_scatter2 = px.scatter(
 )
 fig_scatter2.update_layout(xaxis_title="Salinity", yaxis_title="Temperature")
 fig_scatter2.show()
+
+
+
