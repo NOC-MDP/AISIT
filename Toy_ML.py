@@ -5,12 +5,15 @@ import torch.nn as nn
 import torch.optim as optim
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import root_mean_squared_error
+from sklearn.metrics import r2_score
 import copy
 import random
 import joblib
 import matplotlib.pyplot as plt
 import os
 from attrs import define
+
 
 # -------------------------------
 # 0. Reproducibility if uncommented will make models produce same inference values
@@ -27,27 +30,21 @@ class DatasetSpec:
     salinity_field: str
     temperature_field: str
     oxygen_iso_field: str
+    depth_field: str
     header: int = 0
 
     def __attrs_post_init__(self):
         os.makedirs(self.model_dir, exist_ok=True)
 
 
-# ML_dataset = DatasetSpec(
-#     model_dir = "nasa_models",
-#     input_data = "NASA_Global_Seawater_Oxygen-18_Database_clean.csv",
-#     salinity_field = "Salinity",
-#     temperature_field = "pTemperature",
-#     oxygen_iso_field = "d18O",
-# )
-
 ML_dataset = DatasetSpec(
     model_dir = "glodap_models",
-    input_data = "window_data_from_GLODAPv2.2023.txt",
-    header = 17,
+    input_data = "window_data_from_GLODAPv2.2023.csv",
+    header = 0,
     salinity_field = "SALNTY [PSS-78]",
     temperature_field = "TEMPERATURE [DEG C]",
     oxygen_iso_field = "O18/O16 [/MILLE]",
+    depth_field = "DEPTH [M]",
 )
 
 n_models = 10
@@ -59,12 +56,16 @@ df = pd.read_csv(f"input_data/{ML_dataset.input_data}", header=ML_dataset.header
 df_len = df.__len__()
 # Replace '**' with NaN and drop missing values
 df.replace("**", np.nan, inplace=True)
-df = df.dropna(subset=[ML_dataset.salinity_field, ML_dataset.temperature_field, ML_dataset.oxygen_iso_field])
+df = df.dropna(subset=[ML_dataset.salinity_field, ML_dataset.temperature_field, ML_dataset.oxygen_iso_field,ML_dataset.depth_field])
 df_new_len = df.__len__()
 print(f"removed {df_len-df_new_len} rows out of {df_len} rows")
+
+df_10 = df.sample(frac=0.10)   # 10% sample
+df_90 = df.drop(df_10.index) # get rest
+
 # Extract inputs and target
-X = df[[ML_dataset.salinity_field, ML_dataset.temperature_field]].values.astype(float)
-y = df[ML_dataset.oxygen_iso_field].values.astype(float)
+X = df_90[[ML_dataset.salinity_field, ML_dataset.temperature_field, ML_dataset.depth_field]].values.astype(float)
+y = df_90[ML_dataset.oxygen_iso_field].values.astype(float)
 
 # -------------------------------
 # 2. Normalize inputs
@@ -77,14 +78,13 @@ joblib.dump(scaler, f"{ML_dataset.model_dir}/scaler.save")
 # 3. Define the neural network
 # -------------------------------
 class Oxygen18Net(nn.Module):
-    def __init__(self, input_dim=2, hidden_dims=[64, 32, 16],dropout=0.05):
+    def __init__(self, input_dim=3, hidden_dims=[64, 32, 16]):
         super().__init__()
         layers = []
         prev_dim = input_dim
         for hdim in hidden_dims:
             layers.append(nn.Linear(prev_dim, hdim))
             layers.append(nn.ReLU())
-            layers.append(nn.Dropout(dropout))
             prev_dim = hdim
         layers.append(nn.Linear(prev_dim, 1))  # output δ18O
         self.net = nn.Sequential(*layers)
@@ -113,7 +113,7 @@ for i in range(n_models):
     # -------------------------------
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
-    n_epochs = 500
+    n_epochs = 1000
 
     # -------------------------------
     # 5. Training loop
@@ -159,8 +159,9 @@ for i in range(n_models):
 # 6. Inference
 # -------------------------------
 oxygen_predictions = []
-# inference points of salinity and temperature
-inference_points = [[34.5, -1.2],[34.51,-1.21]]
+# inference points of salinity and temperature and depth
+inference_points = df_10[[ML_dataset.salinity_field, ML_dataset.temperature_field, ML_dataset.depth_field]].values.tolist()
+
 for i in range(n_models):
     # Create the model instance
     model = Oxygen18Net()
@@ -168,7 +169,7 @@ for i in range(n_models):
     # Load saved weights
     model.load_state_dict(torch.load(f"{ML_dataset.model_dir}/oxygen18_model_{i}.pth"))
     model.eval()  # important for inference
-    print("Model weights loaded successfully")
+    # print("Model weights loaded successfully")
 
     # process inference points using saved scaler
     X_new = np.array(inference_points)
@@ -179,13 +180,42 @@ for i in range(n_models):
 
     with torch.no_grad():
         delta18O_pred = model(X_new_tensor).numpy()
-        print(f"Predicted d18O for model {i+1}: {delta18O_pred}")
+        # print(f"Predicted d18O for model {i+1}: {delta18O_pred}")
         oxygen_predictions.append(delta18O_pred)
 
 # Convert to NumPy array for easy axis operations
 arr = np.array(oxygen_predictions)
 # Average across all sublists for each index
 mean_values = np.mean(arr, axis=0)
-# Print results
-for i in range(mean_values.__len__()):
-    print(f"Mean Oxygen prediction for point {i}: {mean_values[i][0]:.3f}")
+print(f"ML Predicted Oxygen RMSE: {root_mean_squared_error(mean_values, df_10[ML_dataset.oxygen_iso_field])}")
+print(f"ML Predicted Oxygen R2: {r2_score(mean_values, df_10[ML_dataset.oxygen_iso_field])}")
+
+
+# for i in range(mean_values.__len__()):
+#     print(f"Mean Oxygen prediction for point {i}: {mean_values[i][0]:.3f}")
+
+# Test against simple poly fit
+# Fit a 2nd-order polynomial
+degree = 2
+coeffs = np.polyfit(df_90[ML_dataset.salinity_field], df_90[ML_dataset.oxygen_iso_field], degree)
+
+# coeffs are [a, b, c] for ax² + bx + c
+# print("Coefficients:", coeffs)
+
+# Create a polynomial function
+poly = np.poly1d(coeffs)
+
+# Evaluate fit
+xfit = np.linspace(df_90[ML_dataset.salinity_field].min(), df_90[ML_dataset.salinity_field].max(), 2000)
+yfit = poly(xfit)
+
+# Plot
+plt.scatter(df_90[ML_dataset.salinity_field], df_90[ML_dataset.oxygen_iso_field], label="Data")
+plt.plot(xfit, yfit, label=f"{degree}-degree fit", linewidth=2,color="red")
+plt.legend()
+plt.show()
+
+
+predicted_oxygen = coeffs[0] * df_10[ML_dataset.salinity_field]**2 + coeffs[1] * df_10[ML_dataset.salinity_field] + coeffs[2]
+print("Poly Predicted Oxygen RMSE:", root_mean_squared_error(predicted_oxygen,df_10[ML_dataset.oxygen_iso_field]))
+print("Poly Predicted Oxygen R2:", r2_score(predicted_oxygen, df_10[ML_dataset.oxygen_iso_field]))

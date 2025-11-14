@@ -1,5 +1,5 @@
-input_file = "input_data/NASA_Global_Seawater_Oxygen-18_Database.csv"
-output_file = "input_data/NASA_Global_Seawater_Oxygen-18_Database_clean.csv"
+input_file = "../input_data/NASA_Global_Seawater_Oxygen-18_Database.csv"
+output_file = "../input_data/NASA_Global_Seawater_Oxygen-18_Database_clean.csv"
 
 expected_cols = 10
 
