@@ -78,7 +78,7 @@ joblib.dump(scaler, f"{ML_dataset.model_dir}/scaler.save")
 # 3. Define the neural network
 # -------------------------------
 class Oxygen18Net(nn.Module):
-    def __init__(self, input_dim=3, hidden_dims=[64, 32, 16]):
+    def __init__(self, input_dim=3, hidden_dims=[128, 64, 32]):
         super().__init__()
         layers = []
         prev_dim = input_dim
@@ -111,7 +111,7 @@ for i in range(n_models):
     # -------------------------------
     # 4. Training setup
     # -------------------------------
-    criterion = nn.MSELoss()
+    criterion = nn.SmoothL1Loss() #nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     n_epochs = 1000
 
