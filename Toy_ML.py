@@ -111,9 +111,9 @@ for i in range(n_models):
     # -------------------------------
     # 4. Training setup
     # -------------------------------
-    criterion = nn.SmoothL1Loss() #nn.MSELoss()
+    criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
-    n_epochs = 1000
+    n_epochs = 500
 
     # -------------------------------
     # 5. Training loop
@@ -189,7 +189,9 @@ arr = np.array(oxygen_predictions)
 mean_values = np.mean(arr, axis=0)
 print(f"ML Predicted Oxygen RMSE: {root_mean_squared_error(mean_values, df_10[ML_dataset.oxygen_iso_field])}")
 print(f"ML Predicted Oxygen R2: {r2_score(mean_values, df_10[ML_dataset.oxygen_iso_field])}")
-
+err = mean_values.squeeze() - df_10[ML_dataset.oxygen_iso_field]          # signed error
+abs_err = np.abs(err)
+print(f"ML Predicted Oxygen Error Percentiles {np.percentile(abs_err, [5, 25, 50, 75, 95])}")
 
 # for i in range(mean_values.__len__()):
 #     print(f"Mean Oxygen prediction for point {i}: {mean_values[i][0]:.3f}")
@@ -219,3 +221,6 @@ plt.show()
 predicted_oxygen = coeffs[0] * df_10[ML_dataset.salinity_field]**2 + coeffs[1] * df_10[ML_dataset.salinity_field] + coeffs[2]
 print("Poly Predicted Oxygen RMSE:", root_mean_squared_error(predicted_oxygen,df_10[ML_dataset.oxygen_iso_field]))
 print("Poly Predicted Oxygen R2:", r2_score(predicted_oxygen, df_10[ML_dataset.oxygen_iso_field]))
+err = predicted_oxygen.squeeze() - df_10[ML_dataset.oxygen_iso_field]          # signed error
+abs_err = np.abs(err)
+print(f"Poly Predicted Oxygen Error Percentiles {np.percentile(abs_err, [5, 25, 50, 75, 95])}")
