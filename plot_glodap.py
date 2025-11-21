@@ -15,7 +15,7 @@ dt_format = "yyyy-mm-ddThh:mm:ss.sss"
 temperature_field = "TEMPERATURE [DEG C]"
 
 # --- Load CSV ---
-df = pd.read_csv("input_data/d.txt", header=17)
+df = pd.read_csv("input_data\\window_data_from_GLODAPv2.2023.csv")
 
 # --- Clean data ---
 # Replace missing or placeholder values (like '**') with NaN
