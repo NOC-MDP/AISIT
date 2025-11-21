@@ -1,0 +1,14 @@
+name: AISIT
+channels:
+  - conda-forge
+dependencies:
+  - matplotlib
+  - pandas
+  - python=3.13
+  - plotly
+  - cartopy
+  - cudatoolkit
+  - pytorch
+  - scikit-learn
+  - attrs
+prefix: C:\Users\thopri\AppData\Local\miniforge3\envs\AISIT
