@@ -1,27 +1,35 @@
+"""Train a ML model to the GLODAP23 data"""
+
+import os
+import copy
+import random
+
 import pandas as pd
 import numpy as np
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import root_mean_squared_error
 from sklearn.metrics import r2_score
-import copy
-import random
+
 import joblib
 import matplotlib.pyplot as plt
-import os
+
 from attrs import define
 
 
 # -------------------------------
 # 0. Reproducibility if uncommented will make models produce same inference values
 # -------------------------------
-#seed = 42
+# seed = 42
 # torch.manual_seed(seed)
 # np.random.seed(seed)
 # random.seed(seed)
+
 
 @define
 class DatasetSpec:
@@ -38,13 +46,13 @@ class DatasetSpec:
 
 
 ML_dataset = DatasetSpec(
-    model_dir = "glodap_models",
-    input_data = "window_data_from_GLODAPv2.2023.csv",
-    header = 0,
-    salinity_field = "SALNTY [PSS-78]",
-    temperature_field = "TEMPERATURE [DEG C]",
-    oxygen_iso_field = "O18/O16 [/MILLE]",
-    depth_field = "DEPTH [M]",
+    model_dir="glodap_models",
+    input_data="window_data_from_GLODAPv2.2023.csv",
+    header=0,
+    salinity_field="SALNTY [PSS-78]",
+    temperature_field="TEMPERATURE [DEG C]",
+    oxygen_iso_field="O18/O16 [/MILLE]",
+    depth_field="DEPTH [M]",
 )
 
 n_models = 10
@@ -56,15 +64,24 @@ df = pd.read_csv(f"input_data/{ML_dataset.input_data}", header=ML_dataset.header
 df_len = df.__len__()
 # Replace '**' with NaN and drop missing values
 df.replace("**", np.nan, inplace=True)
-df = df.dropna(subset=[ML_dataset.salinity_field, ML_dataset.temperature_field, ML_dataset.oxygen_iso_field,ML_dataset.depth_field])
+df = df.dropna(
+    subset=[
+        ML_dataset.salinity_field,
+        ML_dataset.temperature_field,
+        ML_dataset.oxygen_iso_field,
+        ML_dataset.depth_field,
+    ]
+)
 df_new_len = df.__len__()
 print(f"removed {df_len-df_new_len} rows out of {df_len} rows")
 
-df_10 = df.sample(frac=0.10)   # 10% sample
-df_90 = df.drop(df_10.index) # get rest
+df_10 = df.sample(frac=0.10)  # 10% sample
+df_90 = df.drop(df_10.index)  # get rest
 
 # Extract inputs and target
-X = df_90[[ML_dataset.salinity_field, ML_dataset.temperature_field, ML_dataset.depth_field]].values.astype(float)
+X = df_90[
+    [ML_dataset.salinity_field, ML_dataset.temperature_field, ML_dataset.depth_field]
+].values.astype(float)
 y = df_90[ML_dataset.oxygen_iso_field].values.astype(float)
 
 # -------------------------------
@@ -73,6 +90,7 @@ y = df_90[ML_dataset.oxygen_iso_field].values.astype(float)
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 joblib.dump(scaler, f"{ML_dataset.model_dir}/scaler.save")
+
 
 # -------------------------------
 # 3. Define the neural network
@@ -134,22 +152,26 @@ for i in range(n_models):
             val_loss = criterion(y_val_pred, y_val)
 
         if epoch % 10 == 0:
-            print(f"Epoch {epoch}, Train Loss: {loss.item():.4f}, Val Loss: {val_loss.item():.4f}")
+            print(
+                f"Epoch {epoch}, Train Loss: {loss.item():.4f}, Val Loss: {val_loss.item():.4f}"
+            )
         # Store for plotting
         train_losses.append(loss.item())
         val_losses.append(val_loss.item())
 
     # ---- Plot learning curves ----
     plt.figure(figsize=(8, 5))
-    plt.plot(train_losses, label='Training Loss', linewidth=2)
-    plt.plot(val_losses, label='Validation Loss', linewidth=2)
-    plt.xlabel('Epoch')
-    plt.ylabel('MSE Loss')
-    plt.title(f'Training vs Validation Loss for Model {i}')
+    plt.plot(train_losses, label="Training Loss", linewidth=2)
+    plt.plot(val_losses, label="Validation Loss", linewidth=2)
+    plt.xlabel("Epoch")
+    plt.ylabel("MSE Loss")
+    plt.title(f"Training vs Validation Loss for Model {i}")
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(
+        f"{ML_dataset.model_dir}/oxygen18_model_mse_epoch_{i}.png", bbox_inches="tight"
+    )
     # Save the model weights to a file
     torch.save(model.state_dict(), f"{ML_dataset.model_dir}/oxygen18_model_{i}.pth")
     print(f"Model weights saved to oxygen18_model_{i}.pth")
@@ -160,7 +182,9 @@ for i in range(n_models):
 # -------------------------------
 oxygen_predictions = []
 # inference points of salinity and temperature and depth
-inference_points = df_10[[ML_dataset.salinity_field, ML_dataset.temperature_field, ML_dataset.depth_field]].values.tolist()
+inference_points = df_10[
+    [ML_dataset.salinity_field, ML_dataset.temperature_field, ML_dataset.depth_field]
+].values.tolist()
 
 for i in range(n_models):
     # Create the model instance
@@ -187,11 +211,17 @@ for i in range(n_models):
 arr = np.array(oxygen_predictions)
 # Average across all sublists for each index
 mean_values = np.mean(arr, axis=0)
-print(f"ML Predicted Oxygen RMSE: {root_mean_squared_error(mean_values, df_10[ML_dataset.oxygen_iso_field])}")
-print(f"ML Predicted Oxygen R2: {r2_score(mean_values, df_10[ML_dataset.oxygen_iso_field])}")
-err = mean_values.squeeze() - df_10[ML_dataset.oxygen_iso_field]          # signed error
+print(
+    f"ML Predicted Oxygen RMSE: {root_mean_squared_error(mean_values, df_10[ML_dataset.oxygen_iso_field])}"
+)
+print(
+    f"ML Predicted Oxygen R2: {r2_score(mean_values, df_10[ML_dataset.oxygen_iso_field])}"
+)
+err = mean_values.squeeze() - df_10[ML_dataset.oxygen_iso_field]  # signed error
 abs_err = np.abs(err)
-print(f"ML Predicted Oxygen Error Percentiles {np.percentile(abs_err, [5, 25, 50, 75, 95])}")
+print(
+    f"ML Predicted Oxygen Error Percentiles {np.percentile(abs_err, [5, 25, 50, 75, 95])}"
+)
 
 # for i in range(mean_values.__len__()):
 #     print(f"Mean Oxygen prediction for point {i}: {mean_values[i][0]:.3f}")
@@ -199,7 +229,9 @@ print(f"ML Predicted Oxygen Error Percentiles {np.percentile(abs_err, [5, 25, 50
 # Test against simple poly fit
 # Fit a 2nd-order polynomial
 degree = 2
-coeffs = np.polyfit(df_90[ML_dataset.salinity_field], df_90[ML_dataset.oxygen_iso_field], degree)
+coeffs = np.polyfit(
+    df_90[ML_dataset.salinity_field], df_90[ML_dataset.oxygen_iso_field], degree
+)
 
 # coeffs are [a, b, c] for ax² + bx + c
 # print("Coefficients:", coeffs)
@@ -208,19 +240,35 @@ coeffs = np.polyfit(df_90[ML_dataset.salinity_field], df_90[ML_dataset.oxygen_is
 poly = np.poly1d(coeffs)
 
 # Evaluate fit
-xfit = np.linspace(df_90[ML_dataset.salinity_field].min(), df_90[ML_dataset.salinity_field].max(), 2000)
+xfit = np.linspace(
+    df_90[ML_dataset.salinity_field].min(), df_90[ML_dataset.salinity_field].max(), 2000
+)
 yfit = poly(xfit)
 
 # Plot
-plt.scatter(df_90[ML_dataset.salinity_field], df_90[ML_dataset.oxygen_iso_field], label="Data")
-plt.plot(xfit, yfit, label=f"{degree}-degree fit", linewidth=2,color="red")
+plt.scatter(
+    df_90[ML_dataset.salinity_field], df_90[ML_dataset.oxygen_iso_field], label="Data"
+)
+plt.plot(xfit, yfit, label=f"{degree}-degree fit", linewidth=2, color="red")
 plt.legend()
 plt.show()
 
 
-predicted_oxygen = coeffs[0] * df_10[ML_dataset.salinity_field]**2 + coeffs[1] * df_10[ML_dataset.salinity_field] + coeffs[2]
-print("Poly Predicted Oxygen RMSE:", root_mean_squared_error(predicted_oxygen,df_10[ML_dataset.oxygen_iso_field]))
-print("Poly Predicted Oxygen R2:", r2_score(predicted_oxygen, df_10[ML_dataset.oxygen_iso_field]))
-err = predicted_oxygen.squeeze() - df_10[ML_dataset.oxygen_iso_field]          # signed error
+predicted_oxygen = (
+    coeffs[0] * df_10[ML_dataset.salinity_field] ** 2
+    + coeffs[1] * df_10[ML_dataset.salinity_field]
+    + coeffs[2]
+)
+print(
+    "Poly Predicted Oxygen RMSE:",
+    root_mean_squared_error(predicted_oxygen, df_10[ML_dataset.oxygen_iso_field]),
+)
+print(
+    "Poly Predicted Oxygen R2:",
+    r2_score(predicted_oxygen, df_10[ML_dataset.oxygen_iso_field]),
+)
+err = predicted_oxygen.squeeze() - df_10[ML_dataset.oxygen_iso_field]  # signed error
 abs_err = np.abs(err)
-print(f"Poly Predicted Oxygen Error Percentiles {np.percentile(abs_err, [5, 25, 50, 75, 95])}")
+print(
+    f"Poly Predicted Oxygen Error Percentiles {np.percentile(abs_err, [5, 25, 50, 75, 95])}"
+)
