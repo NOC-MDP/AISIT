@@ -1,15 +1,10 @@
-"""Train a ML model to the GLODAP23 data"""
+"""Functions for training a Machine Learning model"""
 
-import os
-import copy
-import random
-
-import pandas as pd
 import numpy as np
 
 import torch
-import torch.nn as nn
-import torch.optim as optim
+from torch import nn
+from torch import optim
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
@@ -19,83 +14,18 @@ from sklearn.metrics import r2_score
 import joblib
 import matplotlib.pyplot as plt
 
-from attrs import define
+# --------------------------
+# Machine Learning Functions
+# --------------------------
 
 
-# -------------------------------
-# 0. Reproducibility if uncommented will make models produce same inference values
-# -------------------------------
-# seed = 42
-# torch.manual_seed(seed)
-# np.random.seed(seed)
-# random.seed(seed)
+## Training Functions ##
 
 
-@define
-class DatasetSpec:
-    model_dir: str
-    input_data: str
-    salinity_field: str
-    temperature_field: str
-    oxygen_iso_field: str
-    depth_field: str
-    header: int = 0
-
-    def __attrs_post_init__(self):
-        os.makedirs(self.model_dir, exist_ok=True)
-
-
-ML_dataset = DatasetSpec(
-    model_dir="glodap_models",
-    input_data="window_data_from_GLODAPv2.2023.csv",
-    header=0,
-    salinity_field="SALNTY [PSS-78]",
-    temperature_field="TEMPERATURE [DEG C]",
-    oxygen_iso_field="O18/O16 [/MILLE]",
-    depth_field="DEPTH [M]",
-)
-
-n_models = 10
-
-# -------------------------------
-# 1. Load and process CSV data
-# -------------------------------
-df = pd.read_csv(f"input_data/{ML_dataset.input_data}", header=ML_dataset.header)
-df_len = df.__len__()
-# Replace '**' with NaN and drop missing values
-df.replace("**", np.nan, inplace=True)
-df = df.dropna(
-    subset=[
-        ML_dataset.salinity_field,
-        ML_dataset.temperature_field,
-        ML_dataset.oxygen_iso_field,
-        ML_dataset.depth_field,
-    ]
-)
-df_new_len = df.__len__()
-print(f"removed {df_len-df_new_len} rows out of {df_len} rows")
-
-df_10 = df.sample(frac=0.10)  # 10% sample
-df_90 = df.drop(df_10.index)  # get rest
-
-# Extract inputs and target
-X = df_90[
-    [ML_dataset.salinity_field, ML_dataset.temperature_field, ML_dataset.depth_field]
-].values.astype(float)
-y = df_90[ML_dataset.oxygen_iso_field].values.astype(float)
-
-# -------------------------------
-# 2. Normalize inputs
-# -------------------------------
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-joblib.dump(scaler, f"{ML_dataset.model_dir}/scaler.save")
-
-
-# -------------------------------
-# 3. Define the neural network
-# -------------------------------
+# Neural network
 class Oxygen18Net(nn.Module):
+    """Class defining the neural network"""
+
     def __init__(self, input_dim=3, hidden_dims=[128, 64, 32]):
         super().__init__()
         layers = []
@@ -111,164 +41,301 @@ class Oxygen18Net(nn.Module):
         return self.net(x)
 
 
-for i in range(n_models):
-    train_losses, val_losses = [], []
-    # Train/test split
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_scaled, y, test_size=0.2, random_state=np.random.randint(100)
-    )
-
-    # Convert to PyTorch tensors
-    X_train = torch.tensor(X_train, dtype=torch.float32)
-    y_train = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1)
-    X_val = torch.tensor(X_val, dtype=torch.float32)
-    y_val = torch.tensor(y_val, dtype=torch.float32).unsqueeze(1)
-
-    model = Oxygen18Net(input_dim=X_train.shape[1])
-
-    # -------------------------------
-    # 4. Training setup
-    # -------------------------------
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
-    n_epochs = 500
-
-    # -------------------------------
-    # 5. Training loop
-    # -------------------------------
-    for epoch in range(n_epochs):
-        # Training
-        model.train()
-        optimizer.zero_grad()
-        y_pred = model(X_train)
-        loss = criterion(y_pred, y_train)
-        loss.backward()
-        optimizer.step()
-
-        # Validation
-        model.eval()
-        with torch.no_grad():
-            y_val_pred = model(X_val)
-            val_loss = criterion(y_val_pred, y_val)
-
-        if epoch % 10 == 0:
-            print(
-                f"Epoch {epoch}, Train Loss: {loss.item():.4f}, Val Loss: {val_loss.item():.4f}"
-            )
-        # Store for plotting
-        train_losses.append(loss.item())
-        val_losses.append(val_loss.item())
-
-    # ---- Plot learning curves ----
+# Training plots
+def training_plots(train_losses, val_losses, model, save_fig=True):
+    """Plot learning curves for training"""
     plt.figure(figsize=(8, 5))
     plt.plot(train_losses, label="Training Loss", linewidth=2)
     plt.plot(val_losses, label="Validation Loss", linewidth=2)
     plt.xlabel("Epoch")
     plt.ylabel("MSE Loss")
-    plt.title(f"Training vs Validation Loss for Model {i}")
+    plt.title(f"Training vs Validation Loss for Model {model}")
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig(
-        f"{ML_dataset.model_dir}/oxygen18_model_mse_epoch_{i}.png", bbox_inches="tight"
+
+    if save_fig:
+        plt.savefig(
+            CONFIG["mse_plots"].format(m=model),
+            bbox_inches="tight",
+        )
+
+    return None
+
+
+# Training
+def training(
+    df_90,
+    input_cols,
+    target_col,
+    n_models=10,
+    n_epochs=500,
+    create_plots=True,
+    save_scaler=True,
+    save_fig=True,
+    save_weights=True,
+):
+    """
+    Training function
+
+    Parameters
+    ----------
+    df_90 : pandas.DataFrame
+        Input training data. Recommend using a subset of the full input data e.g. 90%
+    input_cols : list of str
+        Input column names for training
+    target_col : str
+        Target column name
+    n_models : int, default 10
+        Number of models to run
+    n_epochs : int, default 500
+        Number of epochs to run in the training loop
+    create_plots : bool, default True
+        Choose whether to create plots of model weights vs epoch for each model
+    save_scaler, save_fig, save_weights : bool, default True
+        Options to save the scale, figures, & weights
+
+    Returns
+    -------
+    scaler: sklearn.preprocessing._data.StandardScaler
+        Scaler for normalisation of columns
+    state_dicts: dict of torch.Tensor
+        Dictionary of the weights, one for each model
+    """
+    # Generate inputs
+    x = df_90[input_cols].values.astype(float)
+    y = df_90[target_col].values.astype(float)
+
+    # Normalise the inputs (makes ML better)
+    scaler = StandardScaler()
+    x_scaled = scaler.fit_transform(x)
+    # Option to save scaler
+    if save_scaler:
+        joblib.dump(scaler, CONFIG["scaler"])
+
+    state_dicts = {}
+
+    # Iterate over the models
+    for i in range(n_models):
+        train_losses, val_losses = [], []
+        # Train/test split
+        x_train, x_val, y_train, y_val = train_test_split(
+            x_scaled, y, test_size=0.2, random_state=np.random.randint(100)
+        )
+
+        # Convert to PyTorch tensors
+        x_train = torch.tensor(x_train, dtype=torch.float32)
+        y_train = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1)
+        x_val = torch.tensor(x_val, dtype=torch.float32)
+        y_val = torch.tensor(y_val, dtype=torch.float32).unsqueeze(1)
+
+        model = Oxygen18Net(input_dim=x_train.shape[1])
+
+        # Set up training
+        criterion = nn.MSELoss()
+        optimizer = optim.Adam(model.parameters(), lr=1e-3)
+
+        # Training loop over epochs
+        for epoch in range(n_epochs):
+            # Training
+            model.train()
+            optimizer.zero_grad()
+            y_pred = model(x_train)
+            loss = criterion(y_pred, y_train)
+            loss.backward()
+            optimizer.step()
+
+            # Validation
+            model.eval()
+            with torch.no_grad():
+                y_val_pred = model(x_val)
+                val_loss = criterion(y_val_pred, y_val)
+
+            if epoch % 10 == 0:
+                print(
+                    f"Epoch {epoch}, Train Loss: {loss.item():.4f}, Val Loss: {val_loss.item():.4f}"
+                )
+
+        # Output weights as a dictionary (one value for each model)
+        state_dicts[i] = model.state_dict()
+
+        # Option to create plots of MSE v epoch for each model
+        if create_plots:
+            # Create plot x-y axes
+            train_losses.append(loss.item())
+            val_losses.append(val_loss.item())
+            # Call plotting function
+            training_plots(train_losses, val_losses, model=i, save_fig=save_fig)
+
+        # Option to save weights
+        if save_weights:
+            torch.save(model.state_dict(), CONFIG["oxygen_weights"].format(m=i))
+            print(f"Model weights saved to oxygen18_model_{i}.pth")
+
+    return scaler, state_dicts
+
+
+## Inference Functions ##
+
+
+def inference(df_10, input_cols, target_col, state_dicts, scaler, n_models=10):
+    """
+    Inference of the training data
+
+    Parameters
+    ----------
+    df_10 : pandas.DataFrame
+        Input inference data. Recommend a subset of the full input data e.g. 10% (remaining left from training)
+    input_cols : list of str
+        Input column names for training
+    target_col : str
+        Target column name
+    scaler : sklearn.preprocessing._data.StandardScaler
+        Scaler used for normalisation. Output of training() func.
+    state_dicts : dict of torch.Tensor
+        Tensors of the training weights. Output of training() func.
+    n_models : int, default 10
+        Number of models to run
+
+    Returns
+    -------
+    df_out : pandas.DataFrame
+        Copy of df_out with the predicted target_col added
+    rmse, r2, abs_err : float
+        Output of RMSE, R2 & abs. error, compared with target_col in df_10
+
+    """
+    oxygen_predictions = []
+    # inference points of salinity and temperature and depth
+    inference_points = df_10[input_cols].values.tolist()
+
+    for i in range(n_models):
+        # Create the model instance
+        model = Oxygen18Net()
+
+        # Load saved weights
+        model.load_state_dict(state_dicts[i])
+        model.eval()  # important for inference
+        # print("Model weights loaded successfully")
+
+        # process inference points using saved scaler
+        x_new = np.array(inference_points)
+        x_new_scaled = scaler.transform(x_new)
+        # Convert to tensor and run model
+        x_new_tensor = torch.tensor(x_new_scaled, dtype=torch.float32)
+
+        with torch.no_grad():
+            delta18O_pred = model(x_new_tensor).numpy()
+            # print(f"Predicted d18O for model {i+1}: {delta18O_pred}")
+            oxygen_predictions.append(delta18O_pred)
+
+    # Convert to NumPy array for easy axis operations
+    arr = np.array(oxygen_predictions)
+    # Average across all models for each index
+    mean_values = np.mean(arr, axis=0)
+    # Create new DataFrame with predicted values
+    df_out = df_10.copy()
+    df_out[f"ML_predicted_{target_col}"] = mean_values
+
+    # Compute errors
+    rmse = root_mean_squared_error(mean_values, df_10[target_col])
+    r2 = r2_score(mean_values, df_10[target_col])
+    err = mean_values.squeeze() - df_10[target_col]  # signed error
+    abs_err = np.abs(err)
+
+    print(f"ML Predicted Oxygen RMSE: {rmse}")
+    print(f"ML Predicted Oxygen R2: {r2}")
+    print(
+        f"ML Predicted Oxygen Error Percentiles {np.percentile(abs_err, [5, 25, 50, 75, 95])}"
     )
-    # Save the model weights to a file
-    torch.save(model.state_dict(), f"{ML_dataset.model_dir}/oxygen18_model_{i}.pth")
-    print(f"Model weights saved to oxygen18_model_{i}.pth")
+
+    return df_out, rmse, r2, abs_err
 
 
-# -------------------------------
-# 6. Inference
-# -------------------------------
-oxygen_predictions = []
-# inference points of salinity and temperature and depth
-inference_points = df_10[
-    [ML_dataset.salinity_field, ML_dataset.temperature_field, ML_dataset.depth_field]
-].values.tolist()
-
-for i in range(n_models):
-    # Create the model instance
-    model = Oxygen18Net()
-
-    # Load saved weights
-    model.load_state_dict(torch.load(f"{ML_dataset.model_dir}/oxygen18_model_{i}.pth"))
-    model.eval()  # important for inference
-    # print("Model weights loaded successfully")
-
-    # process inference points using saved scaler
-    X_new = np.array(inference_points)
-    scaler = joblib.load(f"{ML_dataset.model_dir}/scaler.save")
-    X_new_scaled = scaler.transform(X_new)
-    # Convert to tensor and run model
-    X_new_tensor = torch.tensor(X_new_scaled, dtype=torch.float32)
-
-    with torch.no_grad():
-        delta18O_pred = model(X_new_tensor).numpy()
-        # print(f"Predicted d18O for model {i+1}: {delta18O_pred}")
-        oxygen_predictions.append(delta18O_pred)
-
-# Convert to NumPy array for easy axis operations
-arr = np.array(oxygen_predictions)
-# Average across all sublists for each index
-mean_values = np.mean(arr, axis=0)
-print(
-    f"ML Predicted Oxygen RMSE: {root_mean_squared_error(mean_values, df_10[ML_dataset.oxygen_iso_field])}"
-)
-print(
-    f"ML Predicted Oxygen R2: {r2_score(mean_values, df_10[ML_dataset.oxygen_iso_field])}"
-)
-err = mean_values.squeeze() - df_10[ML_dataset.oxygen_iso_field]  # signed error
-abs_err = np.abs(err)
-print(
-    f"ML Predicted Oxygen Error Percentiles {np.percentile(abs_err, [5, 25, 50, 75, 95])}"
-)
-
-# for i in range(mean_values.__len__()):
-#     print(f"Mean Oxygen prediction for point {i}: {mean_values[i][0]:.3f}")
-
-# Test against simple poly fit
-# Fit a 2nd-order polynomial
-degree = 2
-coeffs = np.polyfit(
-    df_90[ML_dataset.salinity_field], df_90[ML_dataset.oxygen_iso_field], degree
-)
-
-# coeffs are [a, b, c] for ax² + bx + c
-# print("Coefficients:", coeffs)
-
-# Create a polynomial function
-poly = np.poly1d(coeffs)
-
-# Evaluate fit
-xfit = np.linspace(
-    df_90[ML_dataset.salinity_field].min(), df_90[ML_dataset.salinity_field].max(), 2000
-)
-yfit = poly(xfit)
-
-# Plot
-plt.scatter(
-    df_90[ML_dataset.salinity_field], df_90[ML_dataset.oxygen_iso_field], label="Data"
-)
-plt.plot(xfit, yfit, label=f"{degree}-degree fit", linewidth=2, color="red")
-plt.legend()
-plt.show()
+# ------------------------
+# Polynomial Fit Functions
+# ------------------------
 
 
-predicted_oxygen = (
-    coeffs[0] * df_10[ML_dataset.salinity_field] ** 2
-    + coeffs[1] * df_10[ML_dataset.salinity_field]
-    + coeffs[2]
-)
-print(
-    "Poly Predicted Oxygen RMSE:",
-    root_mean_squared_error(predicted_oxygen, df_10[ML_dataset.oxygen_iso_field]),
-)
-print(
-    "Poly Predicted Oxygen R2:",
-    r2_score(predicted_oxygen, df_10[ML_dataset.oxygen_iso_field]),
-)
-err = predicted_oxygen.squeeze() - df_10[ML_dataset.oxygen_iso_field]  # signed error
-abs_err = np.abs(err)
-print(
-    f"Poly Predicted Oxygen Error Percentiles {np.percentile(abs_err, [5, 25, 50, 75, 95])}"
-)
+def polyplot(df_90, input_col, target_col, xfit, yfit):
+    """Plot a polynomial fit"""
+    plt.scatter(
+        df_90[input_col],
+        df_90[target_col],
+        label="Data",
+    )
+    plt.plot(xfit, yfit, label=f"2nd-order fit", linewidth=2, color="red")
+    plt.legend()
+    plt.show()
+    return None
+
+
+def poly_fit(df_90, df_10, input_col, target_col, create_plot=True):
+    """
+    Perform a polynomial fit of the a subset of the input data and infer with the rest
+
+    Parameters
+    ----------
+    df_90, df_10 : pandas.DataFrame
+        Input data. df_90 is for the `training' i.e. generating fit parameters and df_10 is for the `inference'
+    input_col, target_col : str
+        Name of input and target columns. Note for polynomial fit, only one input column can be input
+    create_plot : bool, default True
+        Option to create a plot of the fit
+
+    Returns
+    -------
+    df_out : pandas.DataFrame
+        Copy of df_out with the predicted target_col added
+    rmse, r2, abs_err : float
+        Output of RMSE, R2 & abs. error, compared with target_col in df_10
+    yfit, xfit : numpy.ndarray
+        Arrays for the y & x-values of the fit
+
+
+    """
+    # `Training`
+    # Fit a 2nd-order polynomial: coeffs are [a, b, c] for ax² + bx + c
+    degree = 2
+    coeffs = np.polyfit(df_90[input_col], df_90[target_col], degree)
+
+    # Create a polynomial function
+    poly = np.poly1d(coeffs)
+
+    # Evaluate fit
+    xfit = np.linspace(
+        df_90[input_col].min(),
+        df_90[input_col].max(),
+        2000,
+    )
+    yfit = poly(xfit)
+
+    if create_plot:
+        polyplot(df_90, input_col, target_col, xfit, yfit)
+
+    # `Inference`
+    # Compute predicted oxygen & create DataFrame
+    predicted_oxygen = (
+        coeffs[0] * df_10[input_col] ** 2 + coeffs[1] * df_10[input_col] + coeffs[2]
+    )
+
+    df_out = df_10.copy()
+    df_out[f"poly_predicted_{target_col}"] = predicted_oxygen.values
+
+    # Compute errors
+    rmse = root_mean_squared_error(predicted_oxygen, df_10[target_col])
+    r2 = r2_score(predicted_oxygen, df_10[target_col])
+    err = predicted_oxygen.squeeze() - df_10[target_col]  # signed error
+    abs_err = np.abs(err)
+    print(
+        "Poly Predicted Oxygen RMSE:",
+        rmse,
+    )
+    print(
+        "Poly Predicted Oxygen R2:",
+        r2,
+    )
+    print(
+        f"Poly Predicted Oxygen Error Percentiles {np.percentile(abs_err, [5, 25, 50, 75, 95])}"
+    )
+    return df_out, rmse, r2, abs_err, xfit, yfit
