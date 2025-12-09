@@ -1,0 +1,7 @@
+# Input data
+glodap: "input_data/window_data_from_GLODAPv2.2023.csv"
+
+# Save training data
+scaler: "glodap_models/scaler.save"
+oxygen_weights: "glodap_models/oxygen18_model_{m}.pth"
+mse_plots: "glodap_models/oxygen18_mse_epoch_model_{m}.png"
