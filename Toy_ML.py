@@ -79,10 +79,10 @@ class MLModel:
         self.target_col = target_col
         self.n_models = 10
         self.n_epochs = 500
-        self.create_plots = True
-        self.save_scaler = True
-        self.save_trainingfigs = True
-        self.save_trainingweights = True
+        self.create_plots = False
+        self.save_scaler = False
+        self.save_trainingfigs = False
+        self.save_trainingweights = False
 
     def training_plots(self, train_losses, val_losses, model):
         """Plot learning curves for training"""
@@ -165,10 +165,10 @@ class MLModel:
                     y_val_pred = model(x_val)
                     val_loss = criterion(y_val_pred, y_val)
 
-                if epoch % 10 == 0:
-                    print(
-                        f"Epoch {epoch}, Train Loss: {loss.item():.4f}, Val Loss: {val_loss.item():.4f}"
-                    )
+                # if epoch % 10 == 0:
+                #     print(
+                #         f"Epoch {epoch}, Train Loss: {loss.item():.4f}, Val Loss: {val_loss.item():.4f}"
+                #     )
 
             # Output weights as a dictionary (one value for each model)
             state_dicts[i] = model.state_dict()
@@ -215,7 +215,7 @@ class MLModel:
 
         for i in range(self.n_models):
             # Create the model instance
-            model = Oxygen18Net()
+            model = Oxygen18Net(input_dim=state_dicts[0]["net.0.weight"].size()[1])
 
             # Load saved weights
             model.load_state_dict(state_dicts[i])
