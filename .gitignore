@@ -4,3 +4,5 @@ __pycache__
 *.pth
 scaler.save
 *.pt
+arctic_ocean_reanalysis
+.gitignore
