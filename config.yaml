@@ -6,3 +6,6 @@ BAS_prealpha: "input_data/pre_alpha_AISIT_db_all_O18_salinity_filtered_0.7.csv"
 scaler: "glodap_models/scaler.save"
 oxygen_weights: "glodap_models/oxygen18_model_{m}.pth"
 mse_plots: "glodap_models/oxygen18_mse_epoch_model_{m}.png"
+
+# Model data
+arctic_reanalysis: "/noc/mpoc/surface/acable/arctic_ocean_reanalysis/aor_ts.nc"
