@@ -17,6 +17,31 @@ class ArcticPlotter:
         self.title = "Arctic Sampling Locations from GLODAP database"
         self.cbar_title = "year"
 
+    def scatter_plot(self, ax, cbar_data, vmin=None, vmax=None, **kwargs):
+        """Create a scatter plot with default kwargs"""
+        default_kwargs = {
+            "s": 40,
+            "cmap": "viridis",
+            "edgecolor": "black",
+            "linewidth": 0.4,
+        }
+        kwargs = {**default_kwargs, **kwargs}
+
+        sc = ax.scatter(
+            self.lon,
+            self.lat,
+            c=cbar_data,
+            s=kwargs["s"],
+            cmap=kwargs["cmap"],
+            transform=ccrs.PlateCarree(),
+            edgecolor=kwargs["edgecolor"],
+            linewidth=kwargs["linewidth"],
+            vmin=vmin,
+            vmax=vmax,
+        )
+
+        return sc
+
     def plot(self, cbar_data, vmin=None, vmax=None):
         """Create the plot"""
         # --- Create figure and axis ---
@@ -35,18 +60,7 @@ class ArcticPlotter:
         ax.set_extent([-180, 180, 70, 90], ccrs.PlateCarree())
 
         # --- Plot the sample points ---
-        sc = ax.scatter(
-            self.lon,
-            self.lat,
-            c=cbar_data,
-            s=40,
-            cmap="viridis",
-            transform=ccrs.PlateCarree(),
-            edgecolor="black",
-            linewidth=0.4,
-            vmin=vmin,
-            vmax=vmax,
-        )
+        sc = scatter_plot(cbar_data, ax, vmin, vmax)
 
         # --- Colorbar ---
         cb = plt.colorbar(
