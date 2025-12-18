@@ -60,7 +60,7 @@ class ArcticPlotter:
         ax.set_extent([-180, 180, 70, 90], ccrs.PlateCarree())
 
         # --- Plot the sample points ---
-        sc = scatter_plot(cbar_data, ax, vmin, vmax)
+        sc = self.scatter_plot(ax, cbar_data, vmin, vmax)
 
         # --- Colorbar ---
         cb = plt.colorbar(
