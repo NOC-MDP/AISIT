@@ -3,6 +3,7 @@
 import yaml
 
 import numpy as np
+import xarray as xr
 
 import torch
 from torch import nn
@@ -254,6 +255,68 @@ class MLModel:
         )
 
         return df_out, rmse, r2, abs_err
+
+    ## Apply Model Function ##
+    def apply_model(ds, data_vars, scaler, state_dicts, x="longitude", y="latitude"):
+        """
+        Apply the model output to some data
+
+        Parameters
+        ----------
+        ds : xarray.Dataset
+            Input dataset containing the data variables. Must only have lon & lat as the coordinates: no time/depth
+        data_vars : list of str
+            List of data variable names to use as inputs to the model. Must be in the SAME ORDER as the training data
+        scaler : sklearn.preprocessing._data.StandardScaler
+            Scaler used for normalisation. Must be same as the training model. Pass using training()[0]
+        state_dicts : dict of torch.Tensor
+            Tensors of the training weights. Pass using training()[1]
+        x, y : str, default 'longitude', 'latitude'
+            Names of the longitude and latitude dimensions in ds
+
+        Returns
+        -------
+        da : xarray.DataArray
+            DataArray of the predicted oxygen isotope tracer
+        """
+
+        # Broadcast lon/lat to same shape
+        lon_vals = ds[x].values
+        lat_vals = ds[y].values
+        lons, lats = np.meshgrid(lon_vals, lat_vals)
+        lon_flat, lat_flat = lons.ravel(), lats.ravel()
+
+        # Broadcast input variables to same shape
+        var_flat = [ds[var].values.ravel() for var in data_vars]
+
+        # Build input array in SAME ORDER as training
+        X = np.column_stack([*var_flat, lon_flat, lat_flat])
+
+        # Scale the input data
+        X_scaled = scaler.transform(X)
+
+        # Apply training model to get predictions
+        preds = []
+        for i, _ in enumerate(state_dicts):
+            model = Oxygen18Net(input_dim=X_scaled.shape[1])
+            model.load_state_dict(state_dicts[i])
+            model.eval()
+
+            with torch.no_grad():
+                y = model(torch.tensor(X_scaled, dtype=torch.float32)).numpy().squeeze()
+                preds.append(y)
+
+        mean_pred = np.mean(np.stack(preds), axis=0)
+
+        # Build an oxygen isotope tracer DataArray
+        da = xr.DataArray(
+            mean_pred.reshape(ds[data_vars[0]].values.shape),
+            coords=ds.coords,
+            dims=ds.dims,
+            name="oxygen_iso_predicted",
+        )
+
+        return da
 
 
 # ------------------------
