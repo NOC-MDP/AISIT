@@ -257,7 +257,9 @@ class MLModel:
         return df_out, rmse, r2, abs_err
 
     ## Apply Model Function ##
-    def apply_model(ds, data_vars, scaler, state_dicts, x="longitude", y="latitude"):
+    def apply_model(
+        ds, data_vars, scaler, state_dicts, x="longitude", y="latitude", xy_inp=True
+    ):
         """
         Apply the model output to some data
 
@@ -273,6 +275,9 @@ class MLModel:
             Tensors of the training weights. Pass using training()[1]
         x, y : str, default 'longitude', 'latitude'
             Names of the longitude and latitude dimensions in ds
+        xy_inp : bool, default True
+            Choose whether to include latitude and longitude as variables used in the model input.
+            If True, it's assumed that the input is [sin(lat), sin(lon), cos(lon)] (IN THAT ORDER) after the data_vars to account for cyclical coordinate system
 
         Returns
         -------
@@ -284,13 +289,35 @@ class MLModel:
         lon_vals = ds[x].values
         lat_vals = ds[y].values
         lons, lats = np.meshgrid(lon_vals, lat_vals)
-        lon_flat, lat_flat = lons.ravel(), lats.ravel()
+
+        # Broadcast input variables to same shape
+        var_flat = [ds[var].values.ravel() for var in data_vars]
+
+        if xy_inp:
+            # Create sine and cosine of longitude for correct wrapping
+            lon_rad, lat_rad = np.deg2rad(lons), np.deg2rad(lats)
+            lon_sin = np.sin(lon_rad).ravel()
+            lon_cos = np.cos(lon_rad).ravel()
+            lat_sin = np.sin(lat_rad).ravel()
+            # lat_cos = np.cos(lat_rad).ravel()
+
+            # Build input array in SAME ORDER as training
+            X = np.column_stack([*var_flat, lat_sin, lon_sin, lon_cos])
+        else:
+            # Build input array in SAME ORDER as training
+            X = np.column_stack([var_flat])
+        # Create sine and cosine of longitude for correct wrapping
+        lon_rad, lat_rad = np.deg2rad(lons), np.deg2rad(lats)
+        lon_sin = np.sin(lon_rad).ravel()
+        lon_cos = np.cos(lon_rad).ravel()
+        lat_sin = np.sin(lat_rad).ravel()
+        # lat_cos = np.cos(lat_rad).ravel()
 
         # Broadcast input variables to same shape
         var_flat = [ds[var].values.ravel() for var in data_vars]
 
         # Build input array in SAME ORDER as training
-        X = np.column_stack([*var_flat, lon_flat, lat_flat])
+        X = np.column_stack([*var_flat, lon_sin, lon_cos, lat_sin])
 
         # Scale the input data
         X_scaled = scaler.transform(X)
