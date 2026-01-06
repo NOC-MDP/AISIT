@@ -277,7 +277,7 @@ class MLModel:
             Names of the longitude and latitude dimensions in ds
         xy_inp : bool, default True
             Choose whether to include latitude and longitude as variables used in the model input.
-            If True, it's assumed that the input is [sin(lat), sin(lon), cos(lon)] (IN THAT ORDER) after the data_vars to account for cyclical coordinate system
+            If True, it's assumed that the input is [sin(lon), cos(lon), sin(lat)] (IN THAT ORDER) after the data_vars to account for cyclical coordinate system
 
         Returns
         -------
