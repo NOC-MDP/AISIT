@@ -302,22 +302,10 @@ class MLModel:
             # lat_cos = np.cos(lat_rad).ravel()
 
             # Build input array in SAME ORDER as training
-            X = np.column_stack([*var_flat, lat_sin, lon_sin, lon_cos])
+            X = np.column_stack([*var_flat, lon_sin, lon_cos, lat_sin])
         else:
             # Build input array in SAME ORDER as training
             X = np.column_stack([var_flat])
-        # Create sine and cosine of longitude for correct wrapping
-        lon_rad, lat_rad = np.deg2rad(lons), np.deg2rad(lats)
-        lon_sin = np.sin(lon_rad).ravel()
-        lon_cos = np.cos(lon_rad).ravel()
-        lat_sin = np.sin(lat_rad).ravel()
-        # lat_cos = np.cos(lat_rad).ravel()
-
-        # Broadcast input variables to same shape
-        var_flat = [ds[var].values.ravel() for var in data_vars]
-
-        # Build input array in SAME ORDER as training
-        X = np.column_stack([*var_flat, lon_sin, lon_cos, lat_sin])
 
         # Scale the input data
         X_scaled = scaler.transform(X)
