@@ -57,6 +57,8 @@ class MLModel:
             Input training data. Recommend using a subset of the full input data e.g. 90%
         df_10 : pandas.DataFrame
             Input inference data. Recommend a subset of the full input data e.g. 10% (remaining left from training)
+        ds : xarray.Dataset, default empty
+            Option to input an xarray Dataset on which to apply the model
         input_cols : list of str
             Input column names for training
         target_col : str
@@ -127,7 +129,6 @@ class MLModel:
         # Option to save scaler
         if self.save_scaler:
             joblib.dump(scaler, CONFIG["scaler"])
-
         state_dicts = {}
 
         # Iterate over the models
@@ -256,17 +257,56 @@ class MLModel:
 
         return df_out, rmse, r2, abs_err
 
+    def spherical_to_cartesian(self, ds, lon, lat):
+        """
+        Convert coordinate system in DataSet to Cartesian
+
+        Parameters
+        ----------
+        ds : xarray.Dataset
+            Input dataset containing the data variables.
+        lon, lat : str
+            Names of the longitude and latitude dimensions in ds
+
+        Returns
+        -------
+        aor_cart : xarray.Dataset
+        """
+        R = 6371e3  # Earth radius (m)
+
+        lats = np.deg2rad(ds[lat])
+        lons = np.deg2rad(ds[lon])
+
+        # Broadcast to 2D
+        lat2d, lon2d = xr.broadcast(lats, lons)
+
+        r = R * np.cos(lat2d)
+        x = r * np.cos(lon2d)
+        y = r * np.sin(lon2d)
+
+        ds_cart = ds.assign_coords(
+            x=((lat, lon), x.data),
+            y=((lat, lon), y.data),
+        )
+
+        return ds_cart
+
     ## Apply Model Function ##
     def apply_model(
-        ds, data_vars, scaler, state_dicts, x="longitude", y="latitude", xy_inp=True
+        self,
+        ds,
+        data_vars,
+        scaler,
+        state_dicts,
+        x="longitude",
+        y="latitude",
+        xy_inp=True,
     ):
         """
         Apply the model output to some data
 
         Parameters
         ----------
-        ds : xarray.Dataset
-            Input dataset containing the data variables. Must only have lon & lat as the coordinates: no time/depth
         data_vars : list of str
             List of data variable names to use as inputs to the model. Must be in the SAME ORDER as the training data
         scaler : sklearn.preprocessing._data.StandardScaler
@@ -286,23 +326,19 @@ class MLModel:
         """
 
         # Broadcast lon/lat to same shape
-        lon_vals = ds[x].values
-        lat_vals = ds[y].values
-        lons, lats = np.meshgrid(lon_vals, lat_vals)
+        lons = ds[x].values
+        lats = ds[y].values
+        # lons, lats = np.meshgrid(lon_vals, lat_vals)
 
         # Broadcast input variables to same shape
-        var_flat = [ds[var].values.ravel() for var in data_vars]
+        var_flat = [ds[var].values.ravel(order="C") for var in data_vars]
 
         if xy_inp:
-            # Create sine and cosine of longitude for correct wrapping
-            lon_rad, lat_rad = np.deg2rad(lons), np.deg2rad(lats)
-            lon_sin = np.sin(lon_rad).ravel()
-            lon_cos = np.cos(lon_rad).ravel()
-            lat_sin = np.sin(lat_rad).ravel()
-            # lat_cos = np.cos(lat_rad).ravel()
 
             # Build input array in SAME ORDER as training
-            X = np.column_stack([*var_flat, lon_sin, lon_cos, lat_sin])
+            X = np.column_stack(
+                [*var_flat, lons.ravel(order="C"), lats.ravel(order="C")]
+            )
         else:
             # Build input array in SAME ORDER as training
             X = np.column_stack([var_flat])
