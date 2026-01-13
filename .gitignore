@@ -5,4 +5,5 @@ __pycache__
 scaler.save
 *.pt
 arctic_ocean_reanalysis
+gif_plots
 .gitignore
