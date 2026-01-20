@@ -10,3 +10,6 @@ mse_plots: "glodap_models/oxygen18_mse_epoch_model_{m}.png"
 # Model data
 arctic_reanalysis: "/noc/mpoc/surface/acable/arctic_ocean_reanalysis/aor_ts.nc"
 arctic_reanalysis_oxy: "/noc/mpoc/surface/acable/arctic_ocean_reanalysis/aor_oxy.nc"
+
+# AOO index
+aoo_index: "/noc/users/acable/AISIT/aoo_index.csv"
