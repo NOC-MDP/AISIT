@@ -7,3 +7,4 @@ scaler.save
 arctic_ocean_reanalysis
 gif_plots
 .gitignore
+*.nc
