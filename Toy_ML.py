@@ -343,12 +343,17 @@ class MLModel:
         # Build input array in SAME ORDER as training
         var_flat = [ds[var].values.ravel(order="C") for var in data_vars]
 
-        # Add depth to input vars
         if depth_inp:
-            var_flat.append(depth.ravel(order="C"))
-        # Add x & y to input vars
+            # Set lon, lat & depth on same grid size
+            lons, depth_mesh = np.meshgrid(ds[x].values, depth)
+            lats, _ = np.meshgrid(ds[y].values, depth)
+            # Add depth to input vars
+            var_flat.append(depth_mesh.ravel(order="C"))
+
         if xy_inp:
-            var_flat.append(lons.ravel(order="C"), lats.ravel(order="C"))
+            # Add x & y to input vars
+            var_flat.append(lons.ravel(order="C"))
+            var_flat.append(lats.ravel(order="C"))
 
         X = np.column_stack(var_flat)
 
