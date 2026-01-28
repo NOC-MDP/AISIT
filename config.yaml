@@ -1,6 +1,6 @@
 # Input data
 glodap: "input_data/window_data_from_GLODAPv2.2023.csv"
-BAS_prealpha: "input_data/pre_alpha_AISIT_0.1.1.csv"
+BAS_prealpha: "input_data/pre_alpha_AISIT_0.1.4.csv"
 
 # Save training data
 scaler: "glodap_models/scaler.save"
