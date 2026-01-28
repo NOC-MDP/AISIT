@@ -300,7 +300,9 @@ class MLModel:
         state_dicts,
         x="longitude",
         y="latitude",
+        z="depth",
         xy_inp=True,
+        depth_inp=True,
     ):
         """
         Apply the model output to some data
@@ -313,11 +315,12 @@ class MLModel:
             Scaler used for normalisation. Must be same as the training model. Pass using training()[0]
         state_dicts : dict of torch.Tensor
             Tensors of the training weights. Pass using training()[1]
-        x, y : str, default 'longitude', 'latitude'
-            Names of the longitude and latitude dimensions in ds
+        x, y, z : str, default 'longitude', 'latitude', 'depth'
+            Names of the longitude, latitude and depth dimensions in ds
         xy_inp : bool, default True
-            Choose whether to include latitude and longitude as variables used in the model input.
-            If True, it's assumed that the input is [sin(lon), cos(lon), sin(lat)] (IN THAT ORDER) after the data_vars to account for cyclical coordinate system
+            Choose whether to include latitude and longitude as variables used in the model input
+        depth_inp : bool, default True
+            Choose whether to include depth as a variable used in the model input.
 
         Returns
         -------
@@ -328,20 +331,26 @@ class MLModel:
         # Broadcast lon/lat to same shape
         lons = ds[x].values
         lats = ds[y].values
+
+        try:
+            depth = ds[z].values
+        except AttributeError:
+            # If no depth dimension, set to 0
+            depth = [0.0]
+
         # lons, lats = np.meshgrid(lon_vals, lat_vals)
 
-        # Broadcast input variables to same shape
+        # Build input array in SAME ORDER as training
         var_flat = [ds[var].values.ravel(order="C") for var in data_vars]
 
+        # Add depth to input vars
+        if depth_inp:
+            var_flat.append(depth.ravel(order="C"))
+        # Add x & y to input vars
         if xy_inp:
+            var_flat.append(lons.ravel(order="C"), lats.ravel(order="C"))
 
-            # Build input array in SAME ORDER as training
-            X = np.column_stack(
-                [*var_flat, lons.ravel(order="C"), lats.ravel(order="C")]
-            )
-        else:
-            # Build input array in SAME ORDER as training
-            X = np.column_stack([var_flat])
+        X = np.column_stack(var_flat)
 
         # Scale the input data
         X_scaled = scaler.transform(X)
