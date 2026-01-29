@@ -6,5 +6,5 @@ scaler.save
 *.pt
 arctic_ocean_reanalysis
 gif_plots
-.gitignore
 *.nc
+.ipynb_checkpoints/
