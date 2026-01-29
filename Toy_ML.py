@@ -4,6 +4,7 @@ import yaml
 
 import numpy as np
 import xarray as xr
+import polars as pl
 
 import torch
 from torch import nn
@@ -16,6 +17,8 @@ from sklearn.metrics import r2_score
 
 import joblib
 import matplotlib.pyplot as plt
+
+from glomar_gridding.grid import grid_from_resolution, map_to_grid
 
 with open("config.yaml", "r") as f:
     CONFIG = yaml.safe_load(f)
@@ -382,6 +385,61 @@ class MLModel:
         )
 
         return da
+
+
+# ----------------------------
+# Compare model & observations
+# ----------------------------
+
+
+def compare_model_obs(df, da, var, cols, tobs, xobs, yobs, x="longitude", y="latitude"):
+    """
+    Compute the RMSE between a DataArray (gridded data e.g. model) and DataFrame (observations) for a given variable
+
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        Input DataFrame containing the observations
+    da: xarray.DataArray
+        Input DataArray containing the gridded data
+    var: str
+        Name of the variable to compare
+    cols: list of str
+        List of additional columns to include from df when mapping to grid
+    tobs, xobs, yobs : str
+        Names of the time, longitude and latitude columns in df
+    x, y : str, default 'longitude', 'latitude'
+        Names of the longitude and latitude dimensions in da
+
+    Returns
+    -------
+    rmse : float
+        Root Mean Square Error between the observations and gridded data for the given variable
+    """
+    df2 = df.copy()
+    # Map the in-situ data to the AOR grid
+    grid = grid_from_resolution(
+        0.125,
+        bounds=[[-179.875, 180], [-89.875, 90]],
+        coord_names=[x, y],
+    )
+
+    # Add grid coordinates
+    df_gridd = map_to_grid(
+        pl.from_pandas(df2[[tobs, xobs, yobs, var]]),
+        grid,
+        obs_coords=[xobs, yobs],
+        grid_coords=[x, y],
+    ).to_pandas()
+
+    df_gridd["gridd_val"] = [
+        da.sel(time=t, longitude=x, latitude=y, method="nearest").values[0]
+        for y, x, t in df_gridd[[f"grid_{yobs}", f"grid_{xobs}", tobs]].values
+    ]
+
+    rmse = np.sqrt(np.mean((df_gridd[var] - df_gridd["gridd_val"]) ** 2))
+
+    return rmse
 
 
 # ------------------------
