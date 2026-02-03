@@ -111,9 +111,11 @@ class MLModel:
         return None
 
     # Training
-    def training(self):
+    def training(self,device="cpu"):
         """
         Training function
+
+        device: set device to use for training, either "cpu" or "cuda"
 
         Returns
         -------
@@ -143,13 +145,13 @@ class MLModel:
             )
 
             # Convert to PyTorch tensors
-            x_train = torch.tensor(x_train, dtype=torch.float32)
-            y_train = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1)
-            x_val = torch.tensor(x_val, dtype=torch.float32)
-            y_val = torch.tensor(y_val, dtype=torch.float32).unsqueeze(1)
+            x_train = torch.tensor(x_train, dtype=torch.float32).to(device)
+            y_train = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1).to(device)
+            x_val   = torch.tensor(x_val, dtype=torch.float32).to(device)
+            y_val   = torch.tensor(y_val, dtype=torch.float32).unsqueeze(1).to(device)
 
             model = Oxygen18Net(input_dim=x_train.shape[1])
-
+            model.to(device)
             # Set up training
             criterion = nn.MSELoss()
             optimizer = optim.Adam(model.parameters(), lr=1e-3)
