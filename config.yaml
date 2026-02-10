@@ -8,8 +8,8 @@ oxygen_weights: "glodap_models/oxygen18_model_{m}.pth"
 mse_plots: "glodap_models/oxygen18_mse_epoch_model_{m}.png"
 
 # Model data
-arctic_reanalysis: "/noc/msm/scratch/biopole/AISIT/cmems_mod_arc_phy_my_topaz4_P1M_so-thetao_180.00W-179.88E_50.00N-90.00N_0.00-4000.00m_1991-01-01-2025-08-01.nc"
-arctic_reanalysis_oxy: "/noc/msm/scratch/biopole/AISIT/aor_oxy.nc"
+arctic_reanalysis: "/work/scratch-pw5/thopri/cmems_mod_arc_phy_my_topaz4_P1M_so-thetao_180.00W-179.88E_50.00N-90.00N_0.00-4000.00m_1991-01-01-2025-08-01.nc"
+arctic_reanalysis_oxy: "aor_oxy.nc"
 
 # AOO index
-aoo_index: "/noc/msm/scratch/biopole/AISIT/aoo_index.csv"
+aoo_index: "aoo_index.csv"
