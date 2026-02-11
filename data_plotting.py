@@ -57,7 +57,7 @@ class ArcticPlotter:
         )
 
         # --- Arctic extent ---
-        ax.set_extent([-180, 180, 70, 90], ccrs.PlateCarree())
+        ax.set_extent([-180, 180, 55, 90], ccrs.PlateCarree())
 
         # --- Plot the sample points ---
         sc = self.scatter_plot(ax, cbar_data, vmin, vmax)
@@ -86,9 +86,10 @@ class OxygenIsotopePlots:
         self.x = x
         self.y = y
         self.ref = ref
-        self.title = "δ¹⁸O vs. Salinity from GLODAP database"
-        self.x_title = "salinity"
+        self.title = "δ¹⁸O vs. Salinity from BAS Prealpha database"
+        self.x_title = "salinity (PSU)"
         self.y_title = "δ¹⁸O (‰)"
+        self.cbar_title = "year"
 
     def plot(self, df):
         """Scatter plot: d18O vs other variables"""
@@ -101,5 +102,9 @@ class OxygenIsotopePlots:
             title=self.title,
             # trendline="ols"  # optional: adds regression line
         )
-        fig_scatter.update_layout(xaxis_title=self.x_title, yaxis_title=self.y_title)
+        fig_scatter.update_layout(
+            xaxis_title=self.x_title,
+            yaxis_title=self.y_title,
+            coloraxis_colorbar_title_text=self.cbar_title,
+        )
         return fig_scatter

@@ -111,7 +111,7 @@ class MLModel:
         return None
 
     # Training
-    def training(self,device="cpu"):
+    def training(self, device="cpu"):
         """
         Training function
 
@@ -147,8 +147,8 @@ class MLModel:
             # Convert to PyTorch tensors
             x_train = torch.tensor(x_train, dtype=torch.float32).to(device)
             y_train = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1).to(device)
-            x_val   = torch.tensor(x_val, dtype=torch.float32).to(device)
-            y_val   = torch.tensor(y_val, dtype=torch.float32).unsqueeze(1).to(device)
+            x_val = torch.tensor(x_val, dtype=torch.float32).to(device)
+            y_val = torch.tensor(y_val, dtype=torch.float32).unsqueeze(1).to(device)
 
             model = Oxygen18Net(input_dim=x_train.shape[1])
             model.to(device)
@@ -394,7 +394,7 @@ class MLModel:
 # ----------------------------
 
 
-def compare_model_obs(df, da, var, cols, tobs, xobs, yobs, x="longitude", y="latitude"):
+def compare_model_obs(df, da, var, tobs, xobs, yobs, zobs, x="longitude", y="latitude"):
     """
     Compute the RMSE between a DataArray (gridded data e.g. model) and DataFrame (observations) for a given variable
 
@@ -406,10 +406,8 @@ def compare_model_obs(df, da, var, cols, tobs, xobs, yobs, x="longitude", y="lat
         Input DataArray containing the gridded data
     var: str
         Name of the variable to compare
-    cols: list of str
-        List of additional columns to include from df when mapping to grid
-    tobs, xobs, yobs : str
-        Names of the time, longitude and latitude columns in df
+    tobs, xobs, yobs, zobs : str
+        Names of the time, longitude, latitude and depth columns in df
     x, y : str, default 'longitude', 'latitude'
         Names of the longitude and latitude dimensions in da
 
@@ -428,15 +426,15 @@ def compare_model_obs(df, da, var, cols, tobs, xobs, yobs, x="longitude", y="lat
 
     # Add grid coordinates
     df_gridd = map_to_grid(
-        pl.from_pandas(df2[[tobs, xobs, yobs, var]]),
+        pl.from_pandas(df2[[tobs, xobs, yobs, zobs, var]]),
         grid,
         obs_coords=[xobs, yobs],
         grid_coords=[x, y],
     ).to_pandas()
 
     df_gridd["gridd_val"] = [
-        da.sel(time=t, longitude=x, latitude=y, method="nearest").values[0]
-        for y, x, t in df_gridd[[f"grid_{yobs}", f"grid_{xobs}", tobs]].values
+        da.sel(time=t, longitude=x, latitude=y, depth=d, method="nearest").values
+        for y, x, t, d in df_gridd[[f"grid_{yobs}", f"grid_{xobs}", tobs, zobs]].values
     ]
 
     rmse = np.sqrt(np.mean((df_gridd[var] - df_gridd["gridd_val"]) ** 2))
