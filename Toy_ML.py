@@ -382,7 +382,7 @@ def polyplot(df_90, input_col, target_col, xfit, yfit):
         df_90[target_col],
         label="Data",
     )
-    plt.plot(xfit, yfit, label=f"2nd-order fit", linewidth=2, color="red")
+    plt.plot(xfit, yfit, label="2nd-order fit", linewidth=2, color="red")
     plt.legend()
     plt.show()
     return None
