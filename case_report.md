@@ -24,6 +24,8 @@ The Arctic Ocean Reanalysis (AOR) is a coupled ocean–sea-ice data assimilation
 
 It is available from the Copernicus Marine Data Store [https://doi.org/10.48670/moi-00007] and was downloaded at daily, 1/12th-degree from January 1990 -- October 2025. The data has 40 depth layers and the variables relevant to this study is salinity (_so_) and temperature (_thetao_).
 
+Minor quality control (QC) is required to make the data ready for processing. Some values of salinity are very close to 0, which is unphysical. Addtionally, time columns are converted to a datetime, for easy use of `pandas` in-built datetime functions.
+
 ## 3. Using the model
 
 ### 3.1. The toy model
@@ -32,7 +34,9 @@ It is available from the Copernicus Marine Data Store [https://doi.org/10.48670/
 
 ### 3.2. Running the model
 
+A random 10% subset of the dataset was withheld for validation, while the remaining 90% was used for model training. The temporal distribution of samples was examined to ensure that the training and validation subsets were representative of the overall dataset; however, the observations were notably skewed towards January. Model performance evaluated against the withheld 10% validation data yielded a root mean square error (RMSE) of 0.405 and a coefficient of determination (R²) of 0.927. The distribution of absolute errors across the validation set showed percentiles (5th, 25th, 50th, 75th, 95th) of 0.009, 0.047, 0.122, 0.309, and 0.932, respectively.
 
+The trained model produced a set of weights that were subsequently applied to the Arctic Ocean Reanalysis (AOR) dataset to get a spatially-complete, 1/12th-degree gridded dataset for $\delta^{18}O$ from 1990--2025 in the Arctic region. 
 
 ## 4. Model output
 
