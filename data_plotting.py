@@ -91,10 +91,11 @@ class OxygenIsotopePlots:
         self.x = x
         self.y = y
         self.ref = ref
-        self.title = "δ¹⁸O vs. Salinity from BAS Prealpha database"
-        self.x_title = "salinity (PSU)"
+        self.title = ""
+        self.x_title = ""
         self.y_title = "δ¹⁸O (‰)"
         self.cbar_title = "year"
+        self.caption = ""
 
     def plot(self, df):
         """Scatter plot: d18O vs other variables"""
@@ -111,5 +112,16 @@ class OxygenIsotopePlots:
             xaxis_title=self.x_title,
             yaxis_title=self.y_title,
             coloraxis_colorbar_title_text=self.cbar_title,
+        )
+
+        fig_scatter.add_annotation(
+            text=self.caption,
+            xref="paper",
+            yref="paper",
+            x=0.5,
+            y=-0.3,
+            showarrow=False,
+            align="center",
+            font=dict(size=14),
         )
         return fig_scatter
