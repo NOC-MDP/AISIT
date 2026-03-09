@@ -14,8 +14,9 @@ class ArcticPlotter:
         self.proj = ccrs.NorthPolarStereo()
         self.lat = lat
         self.lon = lon
-        self.title = "Arctic Sampling Locations from GLODAP database"
+        self.title = ""
         self.cbar_title = "year"
+        self.caption = ""
 
     def scatter_plot(self, ax, cbar_data, vmin=None, vmax=None, **kwargs):
         """Create a scatter plot with default kwargs"""
@@ -71,6 +72,10 @@ class ArcticPlotter:
             pad=0.05,
         )
         cb.set_label(self.cbar_title)
+
+        caption = self.caption
+
+        fig.text(0.5, 0.15, caption, ha="center", fontsize=10)
 
         # --- Title ---
         plt.title(self.title, fontsize=12)
