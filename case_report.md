@@ -49,6 +49,8 @@ The trained model produced a set of weights that were subsequently applied to th
 
 ## 5. Testing the model
 
+Do just regional (not year)
+
 ## References 
 
 [Sakov 2012]: Sakov, P., Counillon, F., Bertino, L., Lisæter, K. A., Oke, P. R., and Korablev, A.: TOPAZ4: an ocean-sea ice data assimilation system for the North Atlantic and Arctic, Ocean Sci., 8, 633–656, https://doi.org/10.5194/os-8-633-2012, 2012.
