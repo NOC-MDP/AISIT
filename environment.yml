@@ -2,8 +2,11 @@ name: AISIT
 channels:
   - conda-forge
 dependencies:
+  - xarray
+  - numpy
   - matplotlib
   - pandas
+  - polars
   - python=3.13
   - plotly
   - cartopy
