@@ -687,6 +687,37 @@ def xy_region(da, X, Y, Xreg, Yreg, Xstep=False, Ystep=False):
 ## Climatology & anomaly functions
 
 
+def weighted_average(da, X, Y):
+    """
+    Performs a weighted average over longitude-latitude. Takes the mean of all longitude values and the weighted mean of all latitude values, where the weight is cos(latitude). Returns a timeseries.
+
+    Parameters
+    ----------
+    da : xarray.DataArray
+        Input DataArray
+    X : str
+        Longitude coordinate
+    Y : str
+        Latitude coordinate
+
+    Returns
+    -------
+    da : xarray.DataArray
+    """
+    weights = np.cos(
+        np.deg2rad(getattr(da, Y))
+    )  # Create DataArray "weights" for cos(latitude)
+    weights.name = "weights"
+    da_weighted = da.weighted(
+        weights
+    )  # Weights DataArray da along latitude dimension by cos(latitude)
+    da_out = da_weighted.mean(
+        (X, Y), skipna=True
+    )  # Takes weighted mean and mean over latitude and longitude respectively
+    da_out.attrs.update(da.attrs)
+    return da_out
+
+
 def climatology(
     da,
     tstep,
