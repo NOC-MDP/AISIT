@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib.path as mpath
 
 import cartopy.crs as ccrs
-import cartopy.feature as cart
+import cartopy as cart
 
 
 ## -- Data processing -- ##

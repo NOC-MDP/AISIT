@@ -1,5 +1,5 @@
 # Input data
-BAS_prealpha: "/data/pre_alpha_AISIT_0.1.4.csv"
+BAS_prealpha: "data/bas_data/pre_alpha_AISIT_0.1.4.csv"
 
 # Model data
 arctic_reanalysis: "data/aor_st.nc"
