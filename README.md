@@ -4,7 +4,7 @@ The Arctic Ocean is one of the regions most strongly affected by climate change;
 
 We present a case study where a simple machine learning model is applied to in-situ oxygen isotope tracer data, developed by the British Antarctic Survey as part of the AISIT project, to produce a spatially-complete dataset in the Arctic region.
 
-To install, run `git clone `
+To install, run `git clone https://github.com/NOC-MDP/AISIT.git`
 
 The key files in the repository are
 * `case_study.ipynb`: A Jupyter notebook containing the details of the ML model, its application to the BAS dataset and subsequent use to build a spatially-complete dataset of $\delta^{18}O$ using the Arctic Ocean Reanalysis. 
