@@ -58,7 +58,7 @@ It is available from the Copernicus Marine Data Store [https://doi.org/10.48670/
 
 ### 3.1. The toy model
 
-@Tom: can you fill in this section please?
+To model variations in δ¹⁸O, we implemented a feed-forward artificial neural network designed to capture relationships between environmental parameters such as salinity and δ¹⁸O. The network takes four input features, representing key physical or environmental drivers, and passes them through three fully connected hidden layers of decreasing size (128, 64, and 32 neurons). Each hidden layer uses a Rectified Linear Unit (ReLU) activation function, allowing the model to learn complex, non-linear interactions that are common in Earth system processes. The progressively reducing layer size acts as a form of feature compression, encouraging the network to extract the most informative patterns while limiting over-parameterization. A final linear output layer produces a single continuous prediction of δ¹⁸O. This architecture balances model flexibility with computational efficiency, making it suitable for applications where datasets may be limited in size
 
 ### 3.2. Running the model
 
