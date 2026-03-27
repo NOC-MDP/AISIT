@@ -14,3 +14,11 @@ dependencies:
   - pytorch
   - scikit-learn
   - attrs
+  - pyyaml
+  - ipykernel
+  - dtaidistance
+  - netcdf4
+  - pip
+  - pip:
+    - glomar_gridding
+    - nbformat>=4.2.0
