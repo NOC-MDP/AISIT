@@ -1,0 +1,133 @@
+/home/users/thopri/AISIT/PINN2/main.py:183: DtypeWarning: Columns (13,21,22,25,27,30) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(path)
+/apps/jasmin/jaspy/miniforge_envs/jaspy3.12/mf3-25.3.0-3/envs/jaspy3.12-mf3-25.3.0-3-v20250704/lib/python3.12/site-packages/gsw/stability.py:86: RuntimeWarning: divide by zero encountered in divide
+  N2 = ((g_local**2) / (specvol_mid * db_to_pa * dp))
+/apps/jasmin/jaspy/miniforge_envs/jaspy3.12/mf3-25.3.0-3/envs/jaspy3.12-mf3-25.3.0-3-v20250704/lib/python3.12/site-packages/gsw/stability.py:87: RuntimeWarning: invalid value encountered in multiply
+  N2 *= (beta_mid*dSA - alpha_mid*dCT)
+
+============================================================
+ PINN Conservative Tracer Inference
+============================================================
+  Device      : cuda
+  Obs file    : ../data/bas_data/pre_alpha_AISIT_0.1.4_new_headers.csv
+  Tracer col  : oxy18
+  Date col    : year  (format: auto)
+  Epochs      : 300
+  Output dir  : ./output
+
+── 1. Loading observations ─────────────────────────────────
+  Date format used : auto-detected (dayfirst=True)
+  Parse sample — verify month/day order is correct:
+       raw     parsed  year  month
+09/06/2016 2016-06-09  2016      6
+09/06/2016 2016-06-09  2016      6
+09/06/2016 2016-06-09  2016      6
+09/06/2016 2016-06-09  2016      6
+
+  Loaded 52,053 rows, 34,939 after dropping NaNs
+
+── Dataset summary ────────────────────────────────────────
+  Observations : 34,939
+  Year range   : 1967 - 2025
+  Depth range  : -4.3 - 5200.7 m
+  Tracer range : -27.910 - 2.310
+  Lat range    : 60.0 - 90.0 deg
+  Lon range    : -179.9 - 180.0 deg
+
+  Obs per decade:
+    1960s      33  
+    1970s     641  ███
+    1980s   2,164  ████████████
+    1990s   5,502  ███████████████████████████████
+    2000s  12,388  ███████████████████████████████████████████████████████████████████████
+    2010s  11,658  ███████████████████████████████████████████████████████████████████
+    2020s   2,553  ██████████████
+
+── 2. Engineering features (TEOS-10) ───────────────────────
+  Features : ['sigma0', 'spice', 'sigma2', 'log_depth', 'year_norm', 'season_sin', 'season_cos']
+  Valid obs: 34,939
+
+── 3. Temporal CV (5 folds) ───────────────────────────
+
+  [Fold 1/4]  train n=200  val n=2,144
+[  0] data=0.6199  phys=0.02209  val RMSE=1.6683  R²=-0.608
+[ 50] data=0.0337  phys=0.00094  val RMSE=0.9537  R²=0.475
+[100] data=0.0247  phys=0.00078  val RMSE=0.9638  R²=0.463
+[150] data=0.0171  phys=0.00057  val RMSE=0.9889  R²=0.435
+[200] data=0.0163  phys=0.00047  val RMSE=0.9891  R²=0.435
+[250] data=0.0145  phys=0.00041  val RMSE=0.9886  R²=0.435
+
+  [Fold 2/4]  train n=2,344  val n=4,537
+[  0] data=0.6411  phys=0.02435  val RMSE=2.0689  R²=-0.587
+[ 50] data=0.0793  phys=0.00202  val RMSE=1.3080  R²=0.366
+[100] data=0.0584  phys=0.00212  val RMSE=1.1563  R²=0.504
+[150] data=0.0478  phys=0.00212  val RMSE=1.0992  R²=0.552
+[200] data=0.0463  phys=0.00215  val RMSE=1.0084  R²=0.623
+[250] data=0.0410  phys=0.00184  val RMSE=0.9689  R²=0.652
+
+  [Fold 3/4]  train n=6,881  val n=7,463
+[  0] data=1.0347  phys=0.01398  val RMSE=1.9088  R²=-0.106
+[ 50] data=0.0764  phys=0.00195  val RMSE=0.8957  R²=0.756
+[100] data=0.0578  phys=0.00210  val RMSE=0.6794  R²=0.860
+[150] data=0.0511  phys=0.00233  val RMSE=0.6316  R²=0.879
+[200] data=0.0439  phys=0.00182  val RMSE=0.6168  R²=0.885
+[250] data=0.0410  phys=0.00194  val RMSE=0.6253  R²=0.881
+
+  [Fold 4/4]  train n=14,344  val n=10,384
+[  0] data=0.4224  phys=0.02096  val RMSE=0.4830  R²=0.853
+[ 50] data=0.0810  phys=0.00178  val RMSE=0.5481  R²=0.811
+[100] data=0.0694  phys=0.00177  val RMSE=0.5083  R²=0.837
+[150] data=0.0499  phys=0.00223  val RMSE=0.4907  R²=0.848
+[200] data=0.0444  phys=0.00177  val RMSE=0.4708  R²=0.860
+[250] data=0.0405  phys=0.00159  val RMSE=0.4677  R²=0.862
+  Saved: ./output/cv_results.csv
+
+── Temporal CV results ────────────────────────────────────
+  Fold 1  train 1967-1976  val 1977-1985  R2=0.431  RMSE=0.9929  N_val=2144
+  Fold 2  train 1967-1985  val 1987-1995  R2=0.659  RMSE=0.9586  N_val=4537
+  Fold 3  train 1967-1995  val 1997-2005  R2=0.885  RMSE=0.6151  N_val=7463
+  Fold 4  train 1967-2005  val 2006-2015  R2=0.863  RMSE=0.4665  N_val=10384
+
+  Mean R2: 0.710 +/- 0.184
+
+── 4. Training final model on all data ─────────────────────
+[  0] data=0.3451  phys=0.01988  val RMSE=0.8373  R²=0.699
+[ 50] data=0.0685  phys=0.00192  val RMSE=0.4261  R²=0.922
+[100] data=0.0538  phys=0.00187  val RMSE=0.3613  R²=0.944
+[150] data=0.0471  phys=0.00192  val RMSE=0.3424  R²=0.950
+[200] data=0.0405  phys=0.00171  val RMSE=0.3165  R²=0.957
+[250] data=0.0371  phys=0.00146  val RMSE=0.3037  R²=0.960
+  Saved: ./output/training_history.png
+  Saved model: ./output/pinn_tracer.pt
+
+── 5. Diagnostics ──────────────────────────────────────────
+  Saved: ./output/predictions.csv
+  In-sample RMSE       : 0.3027
+  In-sample R2         : 0.961
+  Mean uncertainty (1s): 0.0562
+  Saved: ./output/ts_diagram_check.png
+  Saved: ./output/residual_diagnostics.png
+  Saved: ./output/uncertainty_vs_depth.png
+
+── 6. Inferring on ocean model: /work/scratch-pw5/thopri/cmems_mod_arc_phy_my_topaz4_P1M_thetao-so_180.00W-179.88E_50.00N-90.00N_0.00-4000.00m_1991-01-01-2026-01-01.nc ─────────
+Traceback (most recent call last):
+  File "/home/users/thopri/AISIT/PINN2/main.py", line 502, in <module>
+    main()
+  File "/home/users/thopri/AISIT/PINN2/main.py", line 465, in main
+    ds_out = infer_on_model_field(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/users/thopri/AISIT/PINN2/pinn_tracer.py", line 368, in infer_on_model_field
+    temp_3d = _to_dep_lat_lon(ds[temp_var])   # (D, Y, X)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/users/thopri/AISIT/PINN2/pinn_tracer.py", line 366, in _to_dep_lat_lon
+    return da.transpose(dep_dim, lat_dim, lon_dim).values  # numpy
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/jasmin/jaspy/miniforge_envs/jaspy3.12/mf3-25.3.0-3/envs/jaspy3.12-mf3-25.3.0-3-v20250704/lib/python3.12/site-packages/xarray/util/deprecation_helpers.py", line 143, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/jasmin/jaspy/miniforge_envs/jaspy3.12/mf3-25.3.0-3/envs/jaspy3.12-mf3-25.3.0-3-v20250704/lib/python3.12/site-packages/xarray/core/dataarray.py", line 3110, in transpose
+    dim = tuple(infix_dims(dim, self.dims, missing_dims))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/jasmin/jaspy/miniforge_envs/jaspy3.12/mf3-25.3.0-3/envs/jaspy3.12-mf3-25.3.0-3-v20250704/lib/python3.12/site-packages/xarray/namedarray/utils.py", line 173, in infix_dims
+    raise ValueError(
+ValueError: ('depth', 'latitude', 'longitude') must be a permuted list of ('time', 'depth', 'latitude', 'longitude'), unless `...` is included

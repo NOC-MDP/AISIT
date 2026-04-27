@@ -116,24 +116,14 @@ def jacobian_columns(model, x, col_indices):
 
 
 def physics_losses(model, x_batch, feature_names):
-    """
-    Three physics-informed loss terms.
-    All derivatives share one computation graph built on x_in.
-    """
     idx_sig = feature_names.index("sigma0")
     idx_spi = feature_names.index("spice")
     idx_yr  = feature_names.index("year_norm")
 
-    # ── Single requires_grad tensor for the whole graph ──────────────────
-    x_in = x_batch.clone().requires_grad_(True)   # ✅ all grads flow through here
-    C    = model(x_in)
+    x_in = x_batch.clone().requires_grad_(True)
+    C = model(x_in)
 
-    # First-order gradients in one pass
-    grads_1 = torch.autograd.grad(
-        C.sum(), x_in,
-        create_graph=True,   # ✅ needed so we can differentiate again
-        retain_graph=True
-    )[0]
+    grads_1 = torch.autograd.grad(C.sum(), x_in, create_graph=True)[0]
 
     dC_dsig = grads_1[:, idx_sig]
     dC_dspi = grads_1[:, idx_spi]
@@ -141,21 +131,21 @@ def physics_losses(model, x_batch, feature_names):
 
     eps = 1e-6
 
-    # L1: diapycnal >> along-isopycnal
-    L_diapycnal = (dC_dspi**2 / (dC_dsig.detach()**2 + eps)).mean()
+    # ── L1: directional constraint (stable)
+    alpha = 0.2
+    L_diapycnal = torch.relu(dC_dspi**2 - alpha * dC_dsig**2).mean()
 
-    # L2: second-order smoothness in σ₀
-    # ✅ differentiate dC_dsig w.r.t. x_in — same graph, works correctly
+    # ── L2: smoothness (second derivative)
     grads_2 = torch.autograd.grad(
-        dC_dsig.sum(), x_in,
-        create_graph=True,
-        retain_graph=True
+        dC_dsig, x_in,
+        grad_outputs=torch.ones_like(dC_dsig),
+        create_graph=True
     )[0]
     d2C_dsig2 = grads_2[:, idx_sig]
     L_smooth = (d2C_dsig2**2).mean()
 
-    # L3: temporal smoothness
-    L_secular = (torch.clamp(dC_dyr.abs() - 3.0, min=0)**2).mean()
+    # ── L3: temporal constraint
+    L_secular = torch.relu(dC_dyr.abs() - 3.0).pow(2).mean()
 
     return L_diapycnal, L_smooth, L_secular
 
