@@ -1,0 +1,28 @@
+/home/users/thopri/AISIT/new_ML/data.py:33: DtypeWarning: Columns (13,21,22,25,27,30) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(cfg.obs_path, parse_dates=[cfg.obs_time_col])
+13:22:03  INFO      Loaded 52,053 observations from ../data/bas_data/pre_alpha_AISIT_0.1.4.csv
+13:26:51  INFO      Co-location complete: 26,893 / 52,053 observations retained after dropping NaNs.
+13:26:51  INFO      Train: 11,839  Val: 3,436
+13:26:51  INFO      Feature names (9): ['thetao', 'so', 'sin_doy', 'cos_doy', 'sin_lon', 'cos_lon', 'sin_lat', 'cos_lat', 'log_depth']
+/home/users/thopri/.local/lib/python3.12/site-packages/torch/utils/data/dataloader.py:627: UserWarning: This DataLoader will create 2 worker processes in total. Our suggested max number of worker in current system is 1, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  warnings.warn(
+13:26:51  INFO      Normaliser saved to checkpoints/normaliser.joblib
+13:26:51  INFO      Model: TracerMLP(params=348,033, blocks=3)
+13:26:52  INFO      Training on device: cuda
+13:26:52  INFO      Model: TracerMLP(params=348,033, blocks=3)
+13:26:54  INFO       Epoch | Train RMSE |   Val RMSE |   Val R² | LR
+13:26:54  INFO      ------------------------------------------------------------
+/home/users/thopri/.local/lib/python3.12/site-packages/torch/utils/data/dataloader.py:627: UserWarning: This DataLoader will create 2 worker processes in total. Our suggested max number of worker in current system is 1, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  warnings.warn(
+13:26:55  INFO           1 |     0.6218 |     0.3950 |   0.6800 | 3.00e-04
+13:26:57  INFO           5 |     0.3825 |     0.3662 |   0.7250 | 3.00e-04
+13:26:59  INFO          10 |     0.3653 |     0.3553 |   0.7411 | 2.98e-04
+13:27:01  INFO          15 |     0.3442 |     0.3868 |   0.6931 | 2.96e-04
+13:27:03  INFO          20 |     0.3284 |     0.3667 |   0.7242 | 2.93e-04
+13:27:05  INFO          25 |     0.3158 |     0.3637 |   0.7287 | 2.89e-04
+13:27:08  INFO          30 |     0.3124 |     0.3760 |   0.7101 | 2.84e-04
+13:27:09  INFO      Early stopping at epoch 34.
+13:27:09  INFO      Best model from epoch 14: val RMSE=0.3543, val R²=0.7425
+13:27:09  INFO      Loading grid from /work/scratch-pw5/thopri/cmems_mod_arc_phy_my_topaz4_P1M_thetao-so_180.00W-179.88E_50.00N-90.00N_0.00-4000.00m_1991-01-01-2026-01-01.nc
+13:27:09  INFO      Building grid feature matrix …
+[2026-04-21T01:22:01.244] error: *** JOB 17303818 ON gpuhost003 CANCELLED AT 2026-04-21T01:22:01 DUE TO TIME LIMIT ***

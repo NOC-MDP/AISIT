@@ -1,0 +1,33 @@
+/home/users/thopri/AISIT/new_ML/data.py:33: DtypeWarning: Columns (13,21,22,25,27,30) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(cfg.obs_path, parse_dates=[cfg.obs_time_col])
+12:36:04  INFO      Loaded 52,053 observations from ../data/bas_data/pre_alpha_AISIT_0.1.4.csv
+13:03:59  INFO      Co-location complete: 26,893 / 52,053 observations retained after dropping NaNs.
+Traceback (most recent call last):
+  File "/home/users/thopri/AISIT/new_ML/main.py", line 112, in <module>
+    main()
+  File "/home/users/thopri/AISIT/new_ML/main.py", line 102, in main
+    model, norm, device = run_train(cfg)
+                          ^^^^^^^^^^^^^^
+  File "/home/users/thopri/AISIT/new_ML/main.py", line 51, in run_train
+    train_loader, val_loader, norm, n_features = prepare_dataloaders(cfg)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/users/thopri/AISIT/new_ML/data.py", line 200, in prepare_dataloaders
+    train_obs  = obs[obs[dc.obs_time_col] <  split_date]
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/jasmin/jaspy/miniforge_envs/jaspy3.12/mf3-25.3.0-3/envs/jaspy3.12-mf3-25.3.0-3-v20250704/lib/python3.12/site-packages/pandas/core/ops/common.py", line 76, in new_method
+    return method(self, other)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/apps/jasmin/jaspy/miniforge_envs/jaspy3.12/mf3-25.3.0-3/envs/jaspy3.12-mf3-25.3.0-3-v20250704/lib/python3.12/site-packages/pandas/core/arraylike.py", line 48, in __lt__
+    return self._cmp_method(other, operator.lt)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/jasmin/jaspy/miniforge_envs/jaspy3.12/mf3-25.3.0-3/envs/jaspy3.12-mf3-25.3.0-3-v20250704/lib/python3.12/site-packages/pandas/core/series.py", line 6130, in _cmp_method
+    res_values = ops.comparison_op(lvalues, rvalues, op)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/jasmin/jaspy/miniforge_envs/jaspy3.12/mf3-25.3.0-3/envs/jaspy3.12-mf3-25.3.0-3-v20250704/lib/python3.12/site-packages/pandas/core/ops/array_ops.py", line 344, in comparison_op
+    res_values = comp_method_OBJECT_ARRAY(op, lvalues, rvalues)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/jasmin/jaspy/miniforge_envs/jaspy3.12/mf3-25.3.0-3/envs/jaspy3.12-mf3-25.3.0-3-v20250704/lib/python3.12/site-packages/pandas/core/ops/array_ops.py", line 129, in comp_method_OBJECT_ARRAY
+    result = libops.scalar_compare(x.ravel(), y, op)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pandas/_libs/ops.pyx", line 107, in pandas._libs.ops.scalar_compare
+TypeError: '<' not supported between instances of 'str' and 'Timestamp'

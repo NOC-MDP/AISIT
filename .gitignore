@@ -8,3 +8,4 @@ aor_import.py
 aor_st.nc
 aor_oxy.nc
 .ipynb_checkpoints
+*.nc

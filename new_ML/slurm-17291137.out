@@ -1,0 +1,4 @@
+/home/users/thopri/AISIT/new_ML/data.py:33: DtypeWarning: Columns (13,21,22,25,27,30) have mixed types. Specify dtype option on import or set low_memory=False.
+  df = pd.read_csv(cfg.obs_path, parse_dates=[cfg.obs_time_col])
+12:31:48  INFO      Loaded 52,053 observations from ../data/bas_data/pre_alpha_AISIT_0.1.4.csv
+[2026-04-20T12:35:23.362] error: *** JOB 17291137 ON gpuhost003 CANCELLED AT 2026-04-20T12:35:23 DUE to SIGNAL Terminated ***
