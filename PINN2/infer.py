@@ -47,10 +47,11 @@ import os
 import sys
 import warnings
 
+import matplotlib
 import numpy as np
 import pandas as pd
 import torch
-import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
@@ -58,18 +59,18 @@ from sklearn.preprocessing import StandardScaler
 warnings.filterwarnings("ignore", category=UserWarning)
 
 from pinn_tracer import (
-    build_features,
     TracerPINN,
-    predict_with_uncertainty,
+    build_features,
     infer_on_model_field,
-    plot_ts_diagram,
     plot_depth_residuals,
+    plot_ts_diagram,
+    predict_with_uncertainty,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CLI
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def parse_args():
     p = argparse.ArgumentParser(
@@ -78,48 +79,81 @@ def parse_args():
     )
 
     # ── Required ──────────────────────────────────────────────────────────────
-    p.add_argument("--checkpoint", required=True,
-                   help="Path to saved .pt checkpoint (from main.py or prior run)")
+    p.add_argument(
+        "--checkpoint",
+        required=True,
+        help="Path to saved .pt checkpoint (from main.py or prior run)",
+    )
 
     # ── Inference targets (at least one required) ─────────────────────────────
     grp = p.add_argument_group("Inference targets (supply at least one)")
-    grp.add_argument("--model", default=None,
-                     help="NetCDF ocean model file for spatial inference")
-    grp.add_argument("--obs",   default=None,
-                     help="CSV of labelled observations for diagnostics/scoring")
+    grp.add_argument(
+        "--model", default=None, help="NetCDF ocean model file for spatial inference"
+    )
+    grp.add_argument(
+        "--obs",
+        default=None,
+        help="CSV of labelled observations for diagnostics/scoring",
+    )
 
     # ── Ocean model options ────────────────────────────────────────────────────
     og = p.add_argument_group("Ocean model options (used with --model)")
-    og.add_argument("--model_year",  type=int, default=2020,
-                    help="Target year for model-field inference")
-    og.add_argument("--model_month", type=int, default=6,
-                    help="Target month for model-field inference (1-12)")
+    og.add_argument(
+        "--model_year",
+        type=int,
+        default=2020,
+        help="Target year for model-field inference",
+    )
+    og.add_argument(
+        "--model_month",
+        type=int,
+        default=6,
+        help="Target month for model-field inference (1-12)",
+    )
 
     # ── Observation / diagnostics options ─────────────────────────────────────
     dg = p.add_argument_group("Observation options (used with --obs)")
-    dg.add_argument("--tracer_col",  default="tracer",
-                    help="Name of the tracer column in the obs CSV")
-    dg.add_argument("--date_col",    default=None,
-                    help="Combined date column name (if not separate year/month)")
-    dg.add_argument("--date_format", default=None,
-                    help="strptime format for --date_col, e.g. '%%d/%%m/%%Y'")
+    dg.add_argument(
+        "--tracer_col",
+        default="tracer",
+        help="Name of the tracer column in the obs CSV",
+    )
+    dg.add_argument(
+        "--date_col",
+        default=None,
+        help="Combined date column name (if not separate year/month)",
+    )
+    dg.add_argument(
+        "--date_format",
+        default=None,
+        help="strptime format for --date_col, e.g. '%%d/%%m/%%Y'",
+    )
 
     # ── Inference hyperparameters ──────────────────────────────────────────────
     ig = p.add_argument_group("Inference hyperparameters")
-    ig.add_argument("--mc_samples", type=int, default=100,
-                    help="MC-Dropout samples for uncertainty estimation")
-    ig.add_argument("--batch_size", type=int, default=2048,
-                    help="Batch size for forward pass (larger = faster on GPU)")
+    ig.add_argument(
+        "--mc_samples",
+        type=int,
+        default=100,
+        help="MC-Dropout samples for uncertainty estimation",
+    )
+    ig.add_argument(
+        "--batch_size",
+        type=int,
+        default=2048,
+        help="Batch size for forward pass (larger = faster on GPU)",
+    )
 
     # ── Misc ──────────────────────────────────────────────────────────────────
     p.add_argument("--output_dir", default="./infer_output")
-    p.add_argument("--seed",       type=int, default=42)
+    p.add_argument("--seed", type=int, default=42)
     return p.parse_args()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CHECKPOINT LOADING
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def load_checkpoint(path, device):
     """
@@ -139,8 +173,15 @@ def load_checkpoint(path, device):
 
     ckpt = torch.load(path, weights_only=False, map_location=device)
 
-    required_keys = {"model_state", "feat_names", "hidden_dim",
-                     "n_blocks", "n_features", "scaler_mean", "scaler_scale"}
+    required_keys = {
+        "model_state",
+        "feat_names",
+        "hidden_dim",
+        "n_blocks",
+        "n_features",
+        "scaler_mean",
+        "scaler_scale",
+    }
     missing = required_keys - set(ckpt.keys())
     if missing:
         sys.exit(
@@ -150,24 +191,26 @@ def load_checkpoint(path, device):
 
     # Reconstruct model
     model = TracerPINN(
-        n_features = ckpt["n_features"],
-        hidden_dim = ckpt["hidden_dim"],
-        n_blocks   = ckpt["n_blocks"],
+        n_features=ckpt["n_features"],
+        hidden_dim=ckpt["hidden_dim"],
+        n_blocks=ckpt["n_blocks"],
     ).to(device)
     model.load_state_dict(ckpt["model_state"])
     model.eval()
 
     # Reconstruct scaler (sklearn StandardScaler shell, no re-fitting needed)
-    scaler         = StandardScaler()
-    scaler.mean_   = ckpt["scaler_mean"]
-    scaler.scale_  = ckpt["scaler_scale"]
+    scaler = StandardScaler()
+    scaler.mean_ = ckpt["scaler_mean"]
+    scaler.scale_ = ckpt["scaler_scale"]
     scaler.n_features_in_ = ckpt["n_features"]
 
     feat_names = ckpt["feat_names"]
 
     print(f"  Checkpoint   : {path}")
-    print(f"  Architecture : hidden_dim={ckpt['hidden_dim']}, "
-          f"n_blocks={ckpt['n_blocks']}, n_features={ckpt['n_features']}")
+    print(
+        f"  Architecture : hidden_dim={ckpt['hidden_dim']}, "
+        f"n_blocks={ckpt['n_blocks']}, n_features={ckpt['n_features']}"
+    )
     print(f"  Features     : {feat_names}")
     return model, scaler, feat_names
 
@@ -176,18 +219,18 @@ def load_checkpoint(path, device):
 # DATE PARSING  (identical helper to main.py — kept local to avoid import dep)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def parse_date_column(df, date_col, date_format=None):
     if date_col not in df.columns:
         raise ValueError(
-            f"Date column '{date_col}' not found. "
-            f"Available columns: {list(df.columns)}"
+            f"Date column '{date_col}' not found. Available columns: {list(df.columns)}"
         )
     raw = df[date_col].astype(str)
     if date_format:
-        parsed   = pd.to_datetime(raw, format=date_format, errors="coerce")
+        parsed = pd.to_datetime(raw, format=date_format, errors="coerce")
         fmt_used = date_format
     else:
-        parsed   = pd.to_datetime(raw, dayfirst=True, errors="coerce")
+        parsed = pd.to_datetime(raw, dayfirst=True, errors="coerce")
         fmt_used = "auto-detected (dayfirst=True)"
 
     n_failed = parsed.isna().sum()
@@ -200,13 +243,15 @@ def parse_date_column(df, date_col, date_format=None):
         )
 
     df = df.copy()
-    df["year"]  = parsed.dt.year.astype(int)
+    df["year"] = parsed.dt.year.astype(int)
     df["month"] = parsed.dt.month.astype(int)
     n_show = min(4, len(df))
-    sample = pd.DataFrame({
-        "raw"   : raw.iloc[:n_show].values,
-        "parsed": parsed.iloc[:n_show].dt.strftime("%Y-%m-%d").values,
-    })
+    sample = pd.DataFrame(
+        {
+            "raw": raw.iloc[:n_show].values,
+            "parsed": parsed.iloc[:n_show].dt.strftime("%Y-%m-%d").values,
+        }
+    )
     print(f"  Date format : {fmt_used}")
     print(f"  Parse sample (verify day/month order):")
     print(sample.to_string(index=False))
@@ -216,6 +261,7 @@ def parse_date_column(df, date_col, date_format=None):
 # ═══════════════════════════════════════════════════════════════════════════════
 # OBSERVATION LOADING
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def load_observations(path, tracer_col, date_col=None, date_format=None):
     df = pd.read_csv(path)
@@ -231,7 +277,7 @@ def load_observations(path, tracer_col, date_col=None, date_format=None):
                 )
 
     required = {"temp", "salinity", "depth", "lon", "lat", "year", "month"}
-    missing  = required - set(df.columns)
+    missing = required - set(df.columns)
     if missing:
         sys.exit(f"[ERROR] CSV missing required columns: {missing}")
 
@@ -254,6 +300,7 @@ def load_observations(path, tracer_col, date_col=None, date_format=None):
 # DIAGNOSTICS ON OBSERVATIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def run_obs_diagnostics(df, model, scaler, feat_names, mc_samples, device, out):
     """Score model on labelled observations; save plots + predictions CSV."""
     print("\n── Observation diagnostics ─────────────────────────────────")
@@ -271,20 +318,23 @@ def run_obs_diagnostics(df, model, scaler, feat_names, mc_samples, device, out):
         )
 
     df_valid = df.iloc[valid_mask].reset_index(drop=True)
-    X_sc     = scaler.transform(X)
+    X_sc = scaler.transform(X)
 
     y_pred_mn, y_pred_sd = predict_with_uncertainty(
-        model, X_sc, n_samples=mc_samples, device=device,
+        model,
+        X_sc,
+        n_samples=mc_samples,
+        device=device,
     )
 
     # ── Scalar metrics ────────────────────────────────────────────────────────
-    residuals    = y_pred_mn - y
-    rmse         = np.sqrt(np.mean(residuals ** 2))
-    ss_res       = np.sum(residuals ** 2)
-    ss_tot       = np.sum((y - y.mean()) ** 2)
-    r2           = 1 - ss_res / ss_tot
-    mae          = np.mean(np.abs(residuals))
-    mean_uncert  = y_pred_sd.mean()
+    residuals = y_pred_mn - y
+    rmse = np.sqrt(np.mean(residuals**2))
+    ss_res = np.sum(residuals**2)
+    ss_tot = np.sum((y - y.mean()) ** 2)
+    r2 = 1 - ss_res / ss_tot
+    mae = np.mean(np.abs(residuals))
+    mean_uncert = y_pred_sd.mean()
 
     print(f"  N obs          : {len(y):,}")
     print(f"  RMSE           : {rmse:.4f}")
@@ -294,18 +344,25 @@ def run_obs_diagnostics(df, model, scaler, feat_names, mc_samples, device, out):
 
     # ── Save predictions CSV ──────────────────────────────────────────────────
     df_out = df_valid.copy()
-    df_out["tracer_pred"]   = y_pred_mn
+    df_out["tracer_pred"] = y_pred_mn
     df_out["tracer_uncert"] = y_pred_sd
-    df_out["residual"]      = residuals
+    df_out["residual"] = residuals
     pred_path = os.path.join(out, "obs_predictions.csv")
     df_out.to_csv(pred_path, index=False)
     print(f"  Saved: {pred_path}")
 
     # ── Metrics summary CSV ───────────────────────────────────────────────────
-    metrics = pd.DataFrame([{
-        "n_obs": len(y), "rmse": rmse, "r2": r2,
-        "mae": mae, "mean_uncertainty": mean_uncert,
-    }])
+    metrics = pd.DataFrame(
+        [
+            {
+                "n_obs": len(y),
+                "rmse": rmse,
+                "r2": r2,
+                "mae": mae,
+                "mean_uncertainty": mean_uncert,
+            }
+        ]
+    )
     metrics_path = os.path.join(out, "obs_metrics.csv")
     metrics.to_csv(metrics_path, index=False)
     print(f"  Saved: {metrics_path}")
@@ -313,13 +370,18 @@ def run_obs_diagnostics(df, model, scaler, feat_names, mc_samples, device, out):
     # ── Scatter: observed vs predicted ────────────────────────────────────────
     fig, ax = plt.subplots(figsize=(5, 5))
     lims = [min(y.min(), y_pred_mn.min()), max(y.max(), y_pred_mn.max())]
-    ax.errorbar(y, y_pred_mn, yerr=y_pred_sd, fmt="none",
-                ecolor="steelblue", alpha=0.15, lw=0.6)
+    ax.errorbar(
+        y, y_pred_mn, yerr=y_pred_sd, fmt="none", ecolor="steelblue", alpha=0.15, lw=0.6
+    )
     ax.scatter(y, y_pred_mn, s=5, alpha=0.4, c="steelblue", zorder=3)
     ax.plot(lims, lims, "r--", lw=1, label="1:1")
-    ax.set(xlabel="Observed tracer", ylabel="Predicted tracer",
-           title=f"Obs vs Pred  R²={r2:.3f}  RMSE={rmse:.4f}",
-           xlim=lims, ylim=lims)
+    ax.set(
+        xlabel="Observed tracer",
+        ylabel="Predicted tracer",
+        title=f"Obs vs Pred  R²={r2:.3f}  RMSE={rmse:.4f}",
+        xlim=lims,
+        ylim=lims,
+    )
     ax.legend(fontsize=8)
     plt.tight_layout()
     scatter_path = os.path.join(out, "obs_vs_pred_scatter.png")
@@ -331,8 +393,9 @@ def run_obs_diagnostics(df, model, scaler, feat_names, mc_samples, device, out):
     fig, ax = plt.subplots(figsize=(5, 4))
     ax.hist(residuals, bins=60, color="steelblue", edgecolor="white", lw=0.3)
     ax.axvline(0, color="r", ls="--")
-    ax.set(xlabel="Residual (pred − obs)", ylabel="Count",
-           title="Residual distribution")
+    ax.set(
+        xlabel="Residual (pred − obs)", ylabel="Count", title="Residual distribution"
+    )
     plt.tight_layout()
     hist_path = os.path.join(out, "obs_residual_histogram.png")
     plt.savefig(hist_path, dpi=150)
@@ -355,11 +418,20 @@ def run_obs_diagnostics(df, model, scaler, feat_names, mc_samples, device, out):
 
     # ── Uncertainty vs depth ──────────────────────────────────────────────────
     fig, ax = plt.subplots(figsize=(6, 6))
-    sc = ax.scatter(y_pred_sd, df_valid["depth"].values,
-                    c=np.abs(residuals), cmap="hot_r", s=4, alpha=0.5)
+    sc = ax.scatter(
+        y_pred_sd,
+        df_valid["depth"].values,
+        c=np.abs(residuals),
+        cmap="hot_r",
+        s=4,
+        alpha=0.5,
+    )
     ax.invert_yaxis()
-    ax.set(xlabel="Prediction σ (MC-Dropout)", ylabel="Depth (m)",
-           title="Uncertainty vs depth  (colour = |residual|)")
+    ax.set(
+        xlabel="Prediction σ (MC-Dropout)",
+        ylabel="Depth (m)",
+        title="Uncertainty vs depth  (colour = |residual|)",
+    )
     plt.colorbar(sc, ax=ax, label="|residual|")
     plt.tight_layout()
     unc_path = os.path.join(out, "obs_uncertainty_vs_depth.png")
@@ -372,14 +444,18 @@ def run_obs_diagnostics(df, model, scaler, feat_names, mc_samples, device, out):
 # OCEAN MODEL INFERENCE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def run_model_inference(nc_path, model, scaler, feat_names,
-                        model_year, model_month, mc_samples, device, out):
+
+def run_model_inference(
+    nc_path, model, scaler, feat_names, model_year, model_month, mc_samples, device, out
+):
     """Infer tracer field on a NetCDF ocean model and save results."""
     try:
         import xarray as xr
     except ImportError:
-        sys.exit("[ERROR] xarray is required for ocean model inference. "
-                 "Install with: pip install xarray netcdf4")
+        sys.exit(
+            "[ERROR] xarray is required for ocean model inference. "
+            "Install with: pip install xarray netcdf4"
+        )
 
     print(f"\n── Ocean model inference ────────────────────────────────────")
     print(f"  File   : {nc_path}")
@@ -394,105 +470,112 @@ def run_model_inference(nc_path, model, scaler, feat_names,
     time_str = f"{model_year}-{model_month:02d}-01"
     try:
         ds = ds.sel(time=time_str, method="nearest")
-        print(f"  Nearest time slice selected: "
-              f"{str(ds['time'].values)[:10] if 'time' in ds else 'N/A'}")
+        print(
+            f"  Nearest time slice selected: "
+            f"{str(ds['time'].values)[:10] if 'time' in ds else 'N/A'}"
+        )
     except (KeyError, ValueError):
         print("  [WARN] Could not subset by time — using full dataset as-is.")
 
     ds_out = infer_on_model_field(
-        ds, model, scaler, feat_names,
-        target_year  = model_year,
-        target_month = model_month,
-        device       = device,
+        ds,
+        model,
+        scaler,
+        feat_names,
+        target_year=model_year,
+        target_month=model_month,
+        device=device,
     )
 
     # ── Save NetCDF ───────────────────────────────────────────────────────────
-    nc_out = os.path.join(
-        out,
-        f"tracer_predicted_{model_year}_{model_month:02d}.nc"
-    )
+    nc_out = os.path.join(out, f"tracer_predicted_{model_year}_{model_month:02d}.nc")
     ds_out.to_netcdf(nc_out)
     print(f"  Saved NetCDF: {nc_out}")
 
     # ── Surface map ───────────────────────────────────────────────────────────
     import cartopy.crs as ccrs
     import cartopy.feature as cfeature
-    
+
     # ── Surface map ───────────────────────────────────────────────────────────
     depth_dim = next(
-        (d for d in ("depth", "z", "lev", "level", "deptht") if d in ds_out.dims),
-        None
+        (d for d in ("depth", "z", "lev", "level", "deptht") if d in ds_out.dims), None
     )
     sel_kwargs = {depth_dim: 4} if depth_dim else {}
-    
+
     # Extract surface fields
     da_pred = ds_out["tracer_pred"].isel(**sel_kwargs)
-    da_unc  = ds_out["tracer_uncertainty"].isel(**sel_kwargs)
-    
+    da_unc = ds_out["tracer_uncertainty"].isel(**sel_kwargs)
+
     # Get coordinate names
     lat_name = [c for c in da_pred.coords if "lat" in c.lower()][0]
     lon_name = [c for c in da_pred.coords if "lon" in c.lower()][0]
-    
+
     lats = da_pred[lat_name]
     lons = da_pred[lon_name]
-    
+
     # Create figure with Arctic projection
     proj = ccrs.NorthPolarStereo()
     data_crs = ccrs.PlateCarree()
-    
-    fig, axes = plt.subplots(
-        1, 2, figsize=(14, 6),
-        subplot_kw={"projection": proj}
-    )
-    
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6), subplot_kw={"projection": proj})
+
     for ax in axes:
         ax.set_extent([-180, 180, 50, 90], crs=data_crs)  # Arctic view
         ax.coastlines(resolution="110m", linewidth=0.8)
         ax.add_feature(cfeature.LAND, facecolor="lightgray")
         ax.gridlines(draw_labels=False, linewidth=0.5, alpha=0.5)
-    
+
     # ── Plot predicted tracer ─────────────────────────────────────────────────
     pcm1 = axes[0].pcolormesh(
-        lons, lats, da_pred,
+        lons,
+        lats,
+        da_pred,
         transform=data_crs,
         cmap="viridis",
         shading="auto",
-        vmin=-4,
-        vmax=0.5
+        vmin=-6,
+        vmax=0.5,
     )
-    axes[0].set_title(
-        f"Predicted tracer — {model_year}-{model_month:02d} (10m depth)"
-    )
+    axes[0].set_title(f"Predicted tracer — {model_year}-{model_month:02d} (10m depth)")
     plt.colorbar(pcm1, ax=axes[0], orientation="horizontal", pad=0.05)
-    
+
     # ── Plot uncertainty ──────────────────────────────────────────────────────
     pcm2 = axes[1].pcolormesh(
-        lons, lats, da_unc,
-        transform=data_crs,
-        cmap="Oranges",
-        shading="auto"
+        lons, lats, da_unc, transform=data_crs, cmap="Oranges", shading="auto"
     )
     axes[1].set_title("Prediction uncertainty σ (MC-Dropout, 10m depth)")
     plt.colorbar(pcm2, ax=axes[1], orientation="horizontal", pad=0.05)
-    
+
     plt.tight_layout()
-    
-    map_path = os.path.join(
-        out, f"model_10m_map_{model_year}_{model_month:02d}.png"
-    )
+
+    map_path = os.path.join(out, f"model_10m_map_{model_year}_{model_month:02d}.png")
     plt.savefig(map_path, dpi=150)
     plt.close()
-    
+
     print(f"  Saved: {map_path}")
 
     # ── Zonal-mean cross-section ───────────────────────────────────────────────
-    if depth_dim and "lat" in ds_out.coords:
+    if depth_dim and "latitude" in ds_out.coords:
         fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-        ds_out["tracer_pred"].mean("lon").plot(
-            ax=axes[0], cmap="viridis", yincrease=False)
+        ds_out["tracer_pred"].where(ds_out.depth <= 500, drop=True).mean(
+            "longitude"
+        ).plot(
+            ax=axes[0],
+            cmap="viridis",
+            yincrease=False,
+            vmin=-6,
+            vmax=0.5,
+        )
         axes[0].set_title("Zonal-mean predicted tracer")
-        ds_out["tracer_uncertainty"].mean("lon").plot(
-            ax=axes[1], cmap="Oranges", yincrease=False)
+        ds_out["tracer_uncertainty"].where(ds_out.depth <= 500, drop=True).mean(
+            "longitude"
+        ).plot(
+            ax=axes[1],
+            cmap="Oranges",
+            yincrease=False,
+            vmin=-6,
+            vmax=0.5,
+        )
         axes[1].set_title("Zonal-mean uncertainty σ")
         plt.tight_layout()
         xsec_path = os.path.join(
@@ -506,6 +589,7 @@ def run_model_inference(nc_path, model, scaler, feat_names,
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def main():
     args = parse_args()
@@ -525,9 +609,9 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     os.makedirs(args.output_dir, exist_ok=True)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(" PINN Tracer Inference — pre-trained model")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Device       : {device}")
     print(f"  Checkpoint   : {args.checkpoint}")
     if args.obs:
@@ -547,32 +631,39 @@ def main():
     if args.obs is not None:
         print("\n── Loading observations ────────────────────────────────────")
         df = load_observations(
-            args.obs, args.tracer_col,
-            date_col    = args.date_col,
-            date_format = args.date_format,
+            args.obs,
+            args.tracer_col,
+            date_col=args.date_col,
+            date_format=args.date_format,
         )
         run_obs_diagnostics(
-            df, model, scaler, feat_names,
-            mc_samples = args.mc_samples,
-            device     = device,
-            out        = args.output_dir,
+            df,
+            model,
+            scaler,
+            feat_names,
+            mc_samples=args.mc_samples,
+            device=device,
+            out=args.output_dir,
         )
 
     # ── Mode B: ocean model inference ─────────────────────────────────────────
     if args.model is not None:
         run_model_inference(
-            args.model, model, scaler, feat_names,
-            model_year  = args.model_year,
-            model_month = args.model_month,
-            mc_samples  = args.mc_samples,
-            device      = device,
-            out         = args.output_dir,
+            args.model,
+            model,
+            scaler,
+            feat_names,
+            model_year=args.model_year,
+            model_month=args.model_month,
+            mc_samples=args.mc_samples,
+            device=device,
+            out=args.output_dir,
         )
 
     # ── Done ──────────────────────────────────────────────────────────────────
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  All outputs written to: {args.output_dir}/")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
 
 if __name__ == "__main__":
