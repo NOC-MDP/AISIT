@@ -136,3 +136,30 @@ plt.close(fig)
 # plt.tight_layout()
 # plt.savefig(f"infer_output/FWC/fwc_proshutinsky_compare.png", dpi=150)
 # plt.close(fig)
+
+# FWC anomoly plot
+# Compute reference mean (1991–2004)
+reference_mean = annual_mean[(annual_mean.index >= 1991) & (annual_mean.index <= 2004)].mean()
+
+# Compute anomaly
+anomaly = annual_mean - reference_mean
+
+# Plot
+fig, ax = plt.subplots(figsize=(16, 10))
+
+colors = ["red" if v > 0 else "blue" for v in anomaly]
+ax.bar(anomaly.index, anomaly.values, color=colors, alpha=0.7)
+ax.axhline(0, color="black", linewidth=1)
+
+# Shade reference period
+ax.axvspan(1991, 2004, color="grey", alpha=0.15, label="Reference period (1991–2004)")
+
+ax.set_title("Freshwater Content Anomaly (reference: 1991–2004 mean)")
+ax.set_xlabel("Year")
+ax.set_ylabel("FWC Anomaly (m)")
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.savefig("infer_output/FWC/fwc_anomaly.png", dpi=150)
+plt.close(fig)
