@@ -84,10 +84,25 @@ def build_features(df, cast_col="cast_id"):
     season_sin = np.sin(2 * np.pi * df["month"].values / 12)
     season_cos = np.cos(2 * np.pi * df["month"].values / 12)
 
-    # ── Geographic position  ← NEW ────────────────────────────────────────────
-    # Needed so autograd can compute ∂C/∂lon and ∂C/∂lat for the advection loss
-    lon_norm = df["lon"].values / 180.0  # ∈ [-1, 1]
-    lat_norm = df["lat"].values / 90.0  # ∈ [-1, 1]
+    # ── Geographic position (periodic encoding) ───────────────────────────────
+    #
+    # Avoids the International Date Line discontinuity:
+    #   lon = -180° and +180° map to the same location.
+    #
+    # Latitude:
+    #   latn = sin(lat)
+    #
+    # Longitude:
+    #   lonn_sin = sin(lon)
+    #   lonn_cos = cos(lon)
+    
+    lat_rad = np.deg2rad(df["lat"].values)
+    lon_rad = np.deg2rad(df["lon"].values)
+    
+    lat_norm = np.sin(lat_rad)
+    
+    lon_sin = np.sin(lon_rad)
+    lon_cos = np.cos(lon_rad)
 
     # ── Velocity-derived features  ← NEW ─────────────────────────────────────
     u = df["u"].values
@@ -115,8 +130,9 @@ def build_features(df, cast_col="cast_id"):
         "year_norm",
         "season_sin",
         "season_cos",
-        "lon_norm",
-        "lat_norm",  # ← NEW: spatial coords
+        "lat_norm",
+        "lon_sin",
+        "lon_cos",
         "log_speed",
         "flow_sin",
         "flow_cos",  # ← NEW: velocity
@@ -132,8 +148,9 @@ def build_features(df, cast_col="cast_id"):
             year_norm,
             season_sin,
             season_cos,
-            lon_norm,
             lat_norm,
+            lon_sin,
+            lon_cos,
             log_speed,
             flow_sin,
             flow_cos,
@@ -238,8 +255,11 @@ def physics_losses(model, x_batch, feature_names, u_raw, v_raw):
     dC_dsig = grads[:, idx["sigma0"]]
     dC_dspi = grads[:, idx["spice"]]
     dC_dyr = grads[:, idx["year_norm"]]
-    dC_dlon = grads[:, idx["lon_norm"]]  # ← ∂C/∂lon_norm
-    dC_dlat = grads[:, idx["lat_norm"]]  # ← ∂C/∂lat_norm
+    dC_dlat = grads[:, idx["lat_norm"]]
+    
+    dC_dlon_sin = grads[:, idx["lon_sin"]]
+    dC_dlon_cos = grads[:, idx["lon_cos"]]
+    dC_dlon = dC_dlon_sin + dC_dlon_cos # this may not be best way
     log_n2 = x_batch[:, idx["log_n2"]]
 
     # ── L1: diapycnal / along-isopycnal ratio ─────────────────────────────────
@@ -788,8 +808,9 @@ def infer_on_model_field(
         "year_norm": np.full(n_pts, year_norm),
         "season_sin": np.full(n_pts, season_sin),
         "season_cos": np.full(n_pts, season_cos),
-        "lon_norm": lon_f / 180.0,
-        "lat_norm": lat_f / 90.0,
+        "lat_norm": np.sin(np.deg2rad(lat_f)),
+        "lon_sin": np.sin(np.deg2rad(lon_f)),
+        "lon_cos": np.cos(np.deg2rad(lon_f)),
         "log_speed": log_speed,
         "flow_sin": flow_sin,
         "flow_cos": flow_cos,

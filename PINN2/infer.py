@@ -51,7 +51,7 @@ import matplotlib
 import numpy as np
 import pandas as pd
 import torch
-
+import cmocean
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
@@ -531,9 +531,9 @@ def run_model_inference(
         lats,
         da_pred,
         transform=data_crs,
-        cmap="viridis",
+        cmap=cmocean.cm.haline,   # reversed so fresh = light, salty = dark,
         shading="auto",
-        vmin=-6,
+        vmin=-4,
         vmax=0.5,
     )
     axes[0].set_title(f"Predicted tracer — {model_year}-{model_month:02d} (10m depth)")
@@ -557,13 +557,13 @@ def run_model_inference(
     # ── Zonal-mean cross-section ───────────────────────────────────────────────
     if depth_dim and "latitude" in ds_out.coords:
         fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-        ds_out["tracer_pred"].where(ds_out.depth <= 500, drop=True).mean(
+        ds_out["tracer_pred"].where(ds_out.depth <= 300, drop=True).mean(
             "longitude"
         ).plot(
             ax=axes[0],
-            cmap="viridis",
+            cmap = cmocean.cm.haline,   # reversed so fresh = light, salty = dark
             yincrease=False,
-            vmin=-6,
+            vmin=-4,
             vmax=0.5,
         )
         axes[0].set_title("Zonal-mean predicted tracer")
@@ -573,7 +573,7 @@ def run_model_inference(
             ax=axes[1],
             cmap="Oranges",
             yincrease=False,
-            vmin=-6,
+            vmin=-4,
             vmax=0.5,
         )
         axes[1].set_title("Zonal-mean uncertainty σ")
