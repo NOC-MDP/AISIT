@@ -232,7 +232,7 @@ ax.axvspan(1991, 2004, color="grey", alpha=0.15, label="Reference period (1991â€
 
 ax.set_title("Meteoric water Content Anomaly (reference: 1991â€“2004 mean)")
 ax.set_xlabel("Year")
-ax.set_ylabel("MWC Anomaly (m)")
+ax.set_ylabel("MWC Anomaly (km^3)")
 ax.legend()
 ax.grid(True, alpha=0.3)
 
@@ -259,7 +259,7 @@ ax.axvspan(1991, 2004, color="grey", alpha=0.15, label="Reference period (1991â€
 
 ax.set_title("Sea Ice melt water Content Anomaly (reference: 1991â€“2004 mean)")
 ax.set_xlabel("Year")
-ax.set_ylabel("SIWC Anomaly (m)")
+ax.set_ylabel("SIWC Anomaly (km^3)")
 ax.legend()
 ax.grid(True, alpha=0.3)
 
