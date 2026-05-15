@@ -99,6 +99,9 @@ for model_year in model_years:
         # ============================================================
         # ENDMEMBERS https://pmc.ncbi.nlm.nih.gov/articles/PMC5852023
         # ============================================================
+        # ============================================================
+        # Depth Transitions https://link.springer.com/article/10.1007/s41976-025-00269-6
+        # ============================================================
 
         # End-member values
         d18O_pacific = -1.1  # upper ocean (Beaufort Gyre halocline)
@@ -122,7 +125,7 @@ for model_year in model_years:
             return d18O_pacific * (1 - w) + d18O_atlantic * w
 
         def d18O_seaice_endmember(
-            depth, z_transition=50, width=15, d18O_shallow=-2.0, d18O_deep=d18O_atlantic
+            depth, z_transition=25, width=5, d18O_shallow=-2.0, d18O_deep=d18O_pacific
         ):
             """
             Smooth depth-varying sea ice melt d18O end-member.
@@ -150,7 +153,7 @@ for model_year in model_years:
             return d18O_shallow + w * (d18O_deep - d18O_shallow)
 
         def d18O_meteoric_endmember(
-            depth, z_transition=200, width=50, d18O_shallow=-20.0, d18O_deep=-5.0
+            depth, z_transition=200, width=50, d18O_shallow=-20.0, d18O_deep=d18O_atlantic
         ):
             """
             Smooth depth-varying meteoric water d18O end-member.
@@ -182,9 +185,7 @@ for model_year in model_years:
 
         # d180 endmembers
         d18O_ice = d18O_seaice_endmember(depth=depth)
-        d18O_meteoric = (
-            -20.0
-        )  # using depth varying endmember results in very high meteoric fractions
+        d18O_meteoric = d18O_meteoric_endmember(depth=depth) #-20.0
         d18O_ocean = d18O_ocean_endmember(depth=depth)
 
         # ============================================================
