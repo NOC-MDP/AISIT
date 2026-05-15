@@ -51,7 +51,18 @@ from sklearn.preprocessing import StandardScaler
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# parquet column names
+# ═══════════════════════════════════════════════════════════════════════════════
 
+temp_col  = "Temperature_[cel]"
+sal_col   =  "CTD_Salinity_[dimensionless]"
+depth_col = "Combined_Depth_[meters_below_surface]"
+lon_col   = "Longitude_[degree_east]"
+lat_col   = "Latitude_[degree_north]"
+dt_col    = "ISO8601_Datetime"
+u_col     = 'u'
+v_col     = 'v'
 # ═══════════════════════════════════════════════════════════════════════════════
 # CLI
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -184,7 +195,7 @@ def parse_args():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def parse_date_column(df, date_col, date_format=None):
+def parse_date_column(df, date_col, date_format='%Y-%m-%d %H:%M:%S'):
     """
     Parse a combined date column into separate integer 'year' and 'month' cols.
 
@@ -203,12 +214,8 @@ def parse_date_column(df, date_col, date_format=None):
 
     raw = df[date_col].astype(str)
 
-    if date_format:
-        parsed = pd.to_datetime(raw, format=date_format, errors="coerce")
-        fmt_used = date_format
-    else:
-        parsed = pd.to_datetime(raw, dayfirst=True, errors="coerce")
-        fmt_used = "auto-detected (dayfirst=True)"
+    parsed = pd.to_datetime(raw, format=date_format, errors="coerce")
+    fmt_used = date_format
 
     n_failed = parsed.isna().sum()
     if n_failed > 0:
@@ -259,7 +266,7 @@ def load_observations(
     printed and the advection loss will be skipped at training time.
     All other required columns are enforced.
     """
-    df = pd.read_csv(path)
+    df = pd.read_parquet(path)
 
     # ── Date ──────────────────────────────────────────────────────────────────
     if date_col is not None:
@@ -273,7 +280,14 @@ def load_observations(
                 )
 
     # ── Required columns ──────────────────────────────────────────────────────
-    required = {"temp", "salinity", "depth", "lon", "lat", "year", "month"}
+    required = {
+        temp_col, 
+        sal_col, 
+        depth_col, 
+        lon_col, 
+        lat_col, 
+        dt_col, 
+    }
     missing = required - set(df.columns)
     if missing:
         raise ValueError(f"CSV is missing required columns: {missing}")
@@ -285,6 +299,15 @@ def load_observations(
     if tracer_col != "tracer":
         df = df.rename(columns={tracer_col: "tracer"})
 
+    # ── Rename columns ──────────────────────────────────────────────────────
+    df = df.rename(columns={temp_col: "temperature",
+                            sal_col: "salinity", 
+                            depth_col: "depth", 
+                            lon_col: "lon", 
+                            lat_col: "lat", 
+                            dt_col: "dt", 
+                           })
+    
     # ── Velocity columns (optional) ───────────────────────────────────────────
     has_u = u_col in df.columns
     has_v = v_col in df.columns
@@ -314,7 +337,14 @@ def load_observations(
 
     # ── Drop NaNs ─────────────────────────────────────────────────────────────
     before = len(df)
-    df = df.dropna(subset=["temp", "salinity", "depth", "lon", "lat", "tracer"])
+    df = df.dropna(subset=[
+        "temperature", 
+        "salinity", 
+        "depth", 
+        "lon", 
+        "lat", 
+        "tracer"
+    ])
     print(f"  Loaded {before:,} rows, {len(df):,} after dropping NaNs")
     return df, (has_u and has_v)
 

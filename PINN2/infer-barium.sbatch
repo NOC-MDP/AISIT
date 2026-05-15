@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=AISIT_Inference_Run
+#SBATCH --job-name=AISIT_Inference_Run_Barium
 #SBATCH --partition=orchid
 #SBATCH --account=orchid
 #SBATCH --qos=orchid
@@ -13,18 +13,18 @@ module load jaspy
 START_YEAR=1991
 END_YEAR=2025
 
-OUTPUT_DIR=/gws/ssde/j25a/nemo/vol4/thopri/PINN/infer_output
+OUTPUT_DIR=/gws/ssde/j25a/nemo/vol4/thopri/PINN_BARIUM/infer_output
 
 # Loop over all years and months
 for YEAR in $(seq $START_YEAR $END_YEAR); do
     for MONTH in $(seq -w 1 12); do
         echo "Running inference for Year: $YEAR, Month: $MONTH"
         python infer.py \
-            --checkpoint ./output_v1.0.0/pinn_tracer.pt \
+            --checkpoint ./output_barium_v1.0.0/pinn_tracer.pt \
             --model /work/scratch-pw5/thopri/cmems_combined.nc \
             --model_year $YEAR \
             --model_month $MONTH \
-            --tracer_col oxy18 \
+            --tracer_col Barium \
             --output_dir $OUTPUT_DIR
         
         # Check if the python command succeeded

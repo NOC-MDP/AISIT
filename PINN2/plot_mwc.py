@@ -151,14 +151,20 @@ pro_ctd = pro.groupby("YearInt")["FWC2"].mean()
 pro_satellites.index = pd.to_datetime(pro_satellites.index, format='%Y')
 pro_ctd.index = pd.to_datetime(pro_ctd.index, format='%Y')
 
-# Normalise
+# Filter
 annual_mean_filtered = annual_mean[(annual_mean.index >= 2003) & (annual_mean.index <= 2014)]
 annual_mean_filtered.index = pd.to_datetime(annual_mean_filtered.index, format='%Y')
+annual_mean_mwc_filtered = annual_mean_mwc[(annual_mean_mwc.index >= 2003) & (annual_mean_mwc.index <= 2014)]
+annual_mean_mwc_filtered.index = pd.to_datetime(annual_mean_mwc_filtered.index, format='%Y')
+annual_mean_siwc_filtered = annual_mean_siwc[(annual_mean_siwc.index >= 2003) & (annual_mean_siwc.index <= 2014)]
+annual_mean_siwc_filtered.index = pd.to_datetime(annual_mean_siwc_filtered.index, format='%Y')
 
+# Normalise
 annual_mean_norm = zscore(annual_mean_filtered.values)
 pro_sats_norm = zscore(pro_satellites.values)
 pro_ctd_norm = zscore(pro_ctd.values)
-
+annual_mean_mwc_norm = zscore(annual_mean_mwc_filtered.values)
+annual_mean_siwc_norm = zscore(annual_mean_siwc_filtered.values)
 # Plot
 fig = plt.figure(figsize=(16, 10))
 ax = fig.add_subplot(1, 1, 1)
@@ -169,6 +175,10 @@ ax.plot(pro_satellites.index, pro_sats_norm,
         color="red", linewidth=3, linestyle="--", label="Pro Sats")
 ax.plot(pro_ctd.index, pro_ctd_norm,
         color="blue", linewidth=3, linestyle="--", label="Pro CTD's")
+ax.plot(annual_mean_mwc_filtered.index, annual_mean_mwc_norm,
+        color="green", linewidth=2, linestyle="--", label="MWC contribution")
+ax.plot(annual_mean_siwc_filtered.index, annual_mean_siwc_norm,
+        color="orange", linewidth=2, linestyle="--", label="SIWC contribution")
 
 ax.set_title("Compare Proshutinsky with FWC (Normalised)")
 ax.set_xlabel("Year")
@@ -191,13 +201,17 @@ fig = plt.figure(figsize=(16, 10))
 ax = fig.add_subplot(1, 1, 1)
 
 ax.plot(annual_mean_filtered.index, annual_mean_filtered/1000,
-        color="black", linewidth=3, linestyle="--", label="Annual Mean FWC")
+        color="black", linewidth=3, linestyle="-", label="Annual Mean FWC")
 ax.plot(pro_satellites.index, pro_satellites,
-        color="red", linewidth=3, linestyle="--", label="Pro Sats")
+        color="red", linewidth=3, linestyle="-", label="Pro Sats")
 ax.plot(pro_ctd.index, pro_ctd,
-        color="blue", linewidth=3, linestyle="--", label="Pro CTD's")
+        color="blue", linewidth=3, linestyle="-", label="Pro CTD's")
+ax.plot(annual_mean_mwc_filtered.index, annual_mean_mwc_filtered/1000,
+        color="green", linewidth=2, linestyle="--", label="MWC contribution")
+ax.plot(annual_mean_siwc_filtered.index, annual_mean_siwc_filtered/1000,
+        color="orange", linewidth=2, linestyle="--", label="SIWC contribution")
 
-ax.set_title("Compare Proshutinsky with MWC")
+ax.set_title("Compare Proshutinsky with FWC")
 ax.set_xlabel("Year")
 ax.set_ylabel("Freshwater/Meteoric Content")
 

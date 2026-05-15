@@ -1,18 +1,55 @@
 import pandas as pd
 import xarray as xr
 
+
+############ Columns ############
+# Dataset
+# ISO8601_Datetime
+# Latitude_[degree_north]
+# Longitude_[degree_east]
+# CTD_Temperature_WOCE_Flag
+# CTD_Pressure_[dbar]
+# Depth_From_Pressure_[meters_below_surface]
+# Sample_Depth_[meters_below_surface]
+# Combined_Depth_[meters_below_surface]
+# Delta_O18_[permillle]
+# Delta_O18_WOCE_Flag_Translated
+# Delta_O18_WOCE_Flag_Original
+# O18_Standard
+# Barium
+# Barium_WOCE_Flag
+# Barium_Units
+# CTD_Salinity_[dimensionless]
+# CTD_Salinity_WOCE_Flag
+# Bottle_Salinity_[dimensionless]
+# Bottle_Salinity_WOCE_Flag
+# Cruise_ID
+# Station_ID_Name
+# Site_Number_Name
+# Sample_ID
+# Cast_Number
+# Bottle_Number
+# Event
+# Rosette_Position
+# Platform
+# BIOPOLE
+# Freshwater
+# Freshwater_Source
+# Land_Based
+# Temperature_[cel]
+
 # -----------------------------
 # User inputs
 # -----------------------------
-csv_file = "../data/bas_data/pre_alpha_AISIT_0.1.4_new_headers.csv"
-output_file = "../data/bas_data/pre_alpha_AISIT_0.1.4_new_headers_uv.csv"
+csv_file = "../data/bas_data/AISIT_Database_1.0.0.parquet"
+output_file = "../data/bas_data/AISIT_Database_1.0.0_uv.parquet"
 dataset_file = "/work/scratch-pw5/thopri/cmems_mod_arc_phy_my_topaz4_P1M_vyo-vxo_monthly_climatology.nc"  # or .zarr
 
 # CSV column names
-lat_name = "lat"
-lon_name = "lon"
-depth_name = "depth"
-time_name = "year"   # datetime string column
+lat_name = "Latitude_[degree_north]"
+lon_name = "Longitude_[degree_east]"
+depth_name = "Combined_Depth_[meters_below_surface]"
+time_name = "ISO8601_Datetime"   # datetime string column
 
 # Dataset coordinate names
 ds_lat = "latitude"
@@ -23,7 +60,7 @@ ds_time = "month"
 # -----------------------------
 # Load CSV
 # -----------------------------
-df = pd.read_csv(csv_file)
+df = pd.read_parquet(csv_file)
 
 # Convert time column to datetime
 dt = pd.to_datetime(df[time_name], format="%d/%m/%Y")
@@ -114,7 +151,7 @@ plt.show()
 # -----------------------------
 # Save output
 # -----------------------------
-df.to_csv(output_file, index=False)
+df.to_parquet(output_file, index=False)
 
 print(f"Saved output to {output_file}")
 

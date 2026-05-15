@@ -22,10 +22,6 @@ REF_DEPTH_SCALE = 100.0
 SPEED_SCALE = 0.1  # m/s — normalises the w_flow weighting
 # (typical open-ocean speed; adjust for your basin)
 
-
-#
-
-
 # ── 1. FEATURE ENGINEERING ─────────────────────────────────────────────────────
 #
 # Key idea: rotate (T, S) → (σ₀, spiciness)
@@ -68,7 +64,7 @@ def build_features(df, cast_col="cast_id"):
     SA = gsw.SA_from_SP(
         df["salinity"].values, df["depth"].values, df["lon"].values, df["lat"].values
     )
-    CT = gsw.CT_from_t(SA, df["temp"].values, df["depth"].values)
+    CT = gsw.CT_from_t(SA, df["temperature"].values, df["depth"].values)
     sigma0 = gsw.sigma0(SA, CT)
     spice = gsw.spiciness0(SA, CT)
     sigma2 = gsw.sigma2(SA, CT)
@@ -377,7 +373,7 @@ def _compute_log_n2(df, cast_col):
             df["lon"].values,
             df["lat"].values,
         )
-        CT = gsw.CT_from_t(SA, df["temp"].values, df["depth"].values)
+        CT = gsw.CT_from_t(SA, df["temperature"].values, df["depth"].values)
         p = gsw.p_from_z(-np.abs(df["depth"].values), df["lat"].values)
         alpha = gsw.alpha(SA, CT, p)
         beta = gsw.beta(SA, CT, p)
@@ -911,7 +907,7 @@ def plot_ts_diagram(df, feat_names, y_pred):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
     sc1 = ax1.scatter(
-        df["salinity"], df["temp"], c=df["tracer"], cmap="plasma", s=5, alpha=0.6
+        df["salinity"], df["temperature"], c=df["tracer"], cmap="plasma", s=5, alpha=0.6
     )
     ax1.set(
         xlabel="Salinity",
@@ -921,7 +917,7 @@ def plot_ts_diagram(df, feat_names, y_pred):
     plt.colorbar(sc1, ax=ax1, label="Tracer")
 
     sc2 = ax2.scatter(
-        df["salinity"], df["temp"], c=y_pred, cmap="plasma", s=5, alpha=0.6
+        df["salinity"], df["temperature"], c=y_pred, cmap="plasma", s=5, alpha=0.6
     )
     ax2.set(
         xlabel="Salinity",
