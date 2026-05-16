@@ -179,7 +179,7 @@ for model_year in model_years:
             return d18O_shallow + w * (d18O_deep - d18O_shallow)
 
         # salinity endmembers
-        S_ocean = 34.87
+        S_ocean = 34.8
         S_meteoric = 0.0
         S_ice = 4.0
 
