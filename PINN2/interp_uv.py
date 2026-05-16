@@ -1,6 +1,6 @@
 import pandas as pd
 import xarray as xr
-
+import numpy as np
 
 ############ Columns ############
 # Dataset
@@ -100,10 +100,20 @@ sampled = ds.interp(
 )
 
 # -----------------------------
-# Extract u and v
+# Extract and rotate u and v
 # -----------------------------
-df["u"] = sampled["vxo"].values
-df["v"] = sampled["vyo"].values
+
+lats, lons = sampled['latitude'].values, sampled['longitude'].values
+X, Y = sampled["vxo"].values, sampled["vyo"].values
+X_src_crs = X / np.cos(lats / 180 * np.pi)
+Y_src_crs = Y
+magnitude = np.sqrt(X**2 + Y**2)
+magn_src_crs = np.sqrt(X_src_crs**2 + Y_src_crs**2)
+bu = X_src_crs * magnitude / magn_src_crs
+bv = Y_src_crs * magnitude / magn_src_crs
+
+df["u"] = bu
+df["v"] = bv
 
 import numpy as np
 import matplotlib.pyplot as plt

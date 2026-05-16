@@ -650,22 +650,22 @@ def infer_on_model_field(
     _TEMP_VARS = ["temp", "temperature", "thetao", "votemper", "potential_temperature"]
     _SALT_VARS = ["salinity", "salt", "so", "vosaline", "practical_salinity"]
     _UVEL_VARS = [
-        "u",
-        "uo",
+        # "u",
+        # "uo",
         "vxo",
-        "vozocrtx",
-        "u_velocity",
-        "UVEL",
-        "eastward_sea_water_velocity",
+        # "vozocrtx",
+        # "u_velocity",
+        # "UVEL",
+        # "eastward_sea_water_velocity",
     ]
     _VVEL_VARS = [
-        "v",
-        "vo",
+        # "v",
+        # "vo",
         "vyo",
-        "vomecrty",
-        "v_velocity",
-        "VVEL",
-        "northward_sea_water_velocity",
+        # "vomecrty",
+        # "v_velocity",
+        # "VVEL",
+        # "northward_sea_water_velocity",
     ]
     _DEPTH_NAMES = ["depth", "deptht", "depthu", "depthv", "z", "lev", "level"]
     _LAT_NAMES = ["lat", "latitude", "nav_lat", "yt_ocean", "nlat", "y"]
@@ -765,6 +765,16 @@ def infer_on_model_field(
     lon_f = lon_3d.ravel()
     u_flat = u_3d.ravel()
     v_flat = v_3d.ravel()
+
+    # rotate velocities
+    X, Y = u_flat, v_flat
+    X_src_crs = X / np.cos(lat_f/ 180 * np.pi)
+    Y_src_crs = Y
+    magnitude = np.sqrt(X**2 + Y**2)
+    magn_src_crs = np.sqrt(X_src_crs**2 + Y_src_crs**2)
+    u_flat = X_src_crs * magnitude / magn_src_crs
+    v_flat = Y_src_crs * magnitude / magn_src_crs
+        
 
     # ── TEOS-10 ───────────────────────────────────────────────────────────────
     SA = gsw.SA_from_SP(S_flat, z_flat, lon_f, lat_f)

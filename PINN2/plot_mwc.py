@@ -170,11 +170,11 @@ fig = plt.figure(figsize=(16, 10))
 ax = fig.add_subplot(1, 1, 1)
 
 ax.plot(annual_mean_filtered.index, annual_mean_norm,
-        color="black", linewidth=3, linestyle="--", label="Annual Mean FWC")
+        color="black", linewidth=3, linestyle="-", label="Annual Mean FWC")
 ax.plot(pro_satellites.index, pro_sats_norm,
-        color="red", linewidth=3, linestyle="--", label="Pro Sats")
+        color="red", linewidth=3, linestyle="-", label="Pro Sats")
 ax.plot(pro_ctd.index, pro_ctd_norm,
-        color="blue", linewidth=3, linestyle="--", label="Pro CTD's")
+        color="blue", linewidth=3, linestyle="-", label="Pro CTD's")
 ax.plot(annual_mean_mwc_filtered.index, annual_mean_mwc_norm,
         color="green", linewidth=2, linestyle="--", label="MWC contribution")
 ax.plot(annual_mean_siwc_filtered.index, annual_mean_siwc_norm,
