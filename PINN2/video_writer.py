@@ -14,6 +14,10 @@ def write_video(glob2,video_path):
     
     print(f"Video created from {len(image_files)} frames.")
 
-write_video(glob2="infer_output/FWC/FWC_????-??_90_50_180_-180.png",video_path="FWC_animation.mp4")
+# write_video(glob2="infer_output/FWC/FWC_????-??_90_50_180_-180.png",video_path="FWC_animation.mp4")
 #write_video(glob2="/gws/ssde/j25a/nemo/vol4/thopri/PINN/infer_output/model_10m_map_????_??.png",video_path="d18O_10m_animation.mp4")
 #write_video(glob2="/gws/ssde/j25a/nemo/vol4/thopri/PINN/infer_output/model_zonal_mean_????_??.png",video_path="zonal_animation.mp4")
+
+# write_video(glob2="infer_output/FWC/FWC_????-??_90_50_180_-180.png",video_path="FWC_animation.mp4")
+write_video(glob2="/gws/ssde/j25a/nemo/vol4/thopri/PINN_BARIUM/infer_output/model_10m_map_????_??.png",video_path="Ba_10m_animation.mp4")
+write_video(glob2="/gws/ssde/j25a/nemo/vol4/thopri/PINN_BARIUM/infer_output/model_zonal_mean_????_??.png",video_path="Ba_zonal_animation.mp4")
