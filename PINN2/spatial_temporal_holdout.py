@@ -60,7 +60,7 @@ X_scaled = scaler.fit_transform(X)
 
 
 clusterer = hdbscan.HDBSCAN(
-    min_cluster_size=100
+    min_cluster_size=75
 )
 
 df["cluster"] = clusterer.fit_predict(X_scaled)
@@ -132,9 +132,12 @@ ax = plt.axes(projection=ccrs.NorthPolarStereo())
 ax.set_extent([-180, 180, 60, 90], crs=ccrs.PlateCarree())
 
 # Add base features
-ax.add_feature(cfeature.LAND, facecolor="lightgray")
-ax.add_feature(cfeature.OCEAN)
-ax.coastlines(linewidth=0.5)
+# Draw ocean first, then land on top — this is the fix for the
+# all-blue map: zorder must place scatter ABOVE both features.
+ax.add_feature(cfeature.OCEAN, facecolor="#cde4f0", zorder=0)
+ax.add_feature(cfeature.LAND,  facecolor="#d9d4c7", zorder=1)
+ax.add_feature(cfeature.COASTLINE, linewidth=0.5, zorder=2)
+ax.gridlines(color="white", linewidth=0.4, linestyle="--", zorder=2)
 
 # Scatter plot
 sc = ax.scatter(
@@ -151,7 +154,8 @@ sc = ax.scatter(
     test_df[lat_col],
     s=1,
     label="test",
-    transform=ccrs.PlateCarree()
+    transform=ccrs.PlateCarree(),
+    zorder=3,
 )
 
 plt.legend()

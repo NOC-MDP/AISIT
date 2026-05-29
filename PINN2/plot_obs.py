@@ -93,6 +93,8 @@ sc1 = ax1.scatter(
     df[lat_name].values,
     c=barium,
     s=5,
+    vmin=40,
+    vmax=60,
     cmap="viridis",
     transform=ccrs.PlateCarree(),
     zorder=3,           # ← must be higher than land/ocean zorders
