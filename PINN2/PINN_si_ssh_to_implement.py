@@ -4,7 +4,7 @@ concentration (L7) physics losses to the PINN tracer pipeline.
 
 NEW OBSERVATIONS REQUIRED
 ─────────────────────────
-Your CSV must now include:
+CSV must now include:
 
   ssh      Sea surface height (m), e.g. from AVISO/CMEMS climatology.
            Used as a feature (captures dynamic height / mesoscale structure)
@@ -12,7 +12,7 @@ Your CSV must now include:
 
   deta_dx  Eastward SSH gradient component (m deg⁻¹ lon).
   deta_dy  Northward SSH gradient component (m deg⁻¹ lat).
-           Compute once from your SSH climatology via finite difference:
+           Compute once from SSH climatology via finite difference:
                deta_dx = np.gradient(ssh_field, lon_axis, axis=-1)
                deta_dy = np.gradient(ssh_field, lat_axis, axis=-2)
            then interpolate to observation locations.
@@ -57,10 +57,6 @@ L7  Sea-ice concentration
     penalty of full ice cover — physically reasonable since partial ice
     still allows some wind mixing through leads.
 
-INTEGRATION
-───────────
-Drop this file alongside pinn_tracer_velocity.py and update imports in
-main.py (see bottom of file for the updated train call signature).
 """
 
 import numpy as np
