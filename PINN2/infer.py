@@ -46,7 +46,7 @@ import argparse
 import os
 import sys
 import warnings
-
+import glob
 import matplotlib
 import numpy as np
 import pandas as pd
@@ -457,14 +457,25 @@ def run_model_inference(
             "Install with: pip install xarray netcdf4"
         )
 
+    # Define your directory path instead of a single file
     print(f"\n── Ocean model inference ────────────────────────────────────")
-    print(f"  File   : {nc_path}")
-    print(f"  Target : {model_year}-{model_month:02d}")
-
-    if not os.path.isfile(nc_path):
-        sys.exit(f"[ERROR] NetCDF file not found: {nc_path}")
-
-    ds = xr.open_dataset(nc_path)
+    print(f"  Directory : {nc_path}")
+    print(f"  Target    : {model_year}-{model_month:02d}")
+    
+    if not os.path.isdir(nc_path):
+        sys.exit(f"[ERROR] Directory not found: {nc_path}")
+    
+    # Use glob to grab all NetCDF files in the folder
+    file_pattern = os.path.join(nc_path, f"*{model_year}-{model_month:02d}*.nc")
+    file_list = glob.glob(file_pattern)
+    
+    if not file_list:
+        sys.exit(f"[ERROR] No NetCDF files found in: {nc_path}")
+    
+    # Open and combine all datasets
+    # data_vars='minimal' merges variables that don't share all dimensions without bloating memory
+    # coords='minimal' does the same for coordinates
+    ds = xr.open_mfdataset(file_list, combine='by_coords', data_vars='minimal', coords='minimal')
 
     # Subset to the target time step before any heavy operations
     time_str = f"{model_year}-{model_month:02d}-01"
@@ -498,9 +509,9 @@ def run_model_inference(
 
     # ── Surface map ───────────────────────────────────────────────────────────
     depth_dim = next(
-        (d for d in ("depth", "z", "lev", "level", "deptht") if d in ds_out.dims), None
+        (d for d in ("depth", "z", "lev", "level", "deptht","Z") if d in ds_out.dims), None
     )
-    sel_kwargs = {depth_dim: 4} if depth_dim else {}
+    sel_kwargs = {depth_dim: 0} if depth_dim else {}
 
     # Extract surface fields
     da_pred = ds_out["tracer_pred"].isel(**sel_kwargs)
@@ -557,24 +568,24 @@ def run_model_inference(
     # ── Zonal-mean cross-section ───────────────────────────────────────────────
     if depth_dim and "latitude" in ds_out.coords:
         fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-        ds_out["tracer_pred"].where(ds_out.depth <= 300, drop=True).mean(
+        ds_out["tracer_pred"].where(ds_out.Z <= 300, drop=True).mean(
             "longitude"
         ).plot(
             ax=axes[0],
-            cmap = cmocean.cm.haline,   # reversed so fresh = light, salty = dark
+            cmap = cmocean.cm.haline,
             yincrease=False,
             vmin=-4,
             vmax=0.5,
         )
         axes[0].set_title("Zonal-mean predicted tracer")
-        ds_out["tracer_uncertainty"].where(ds_out.depth <= 500, drop=True).mean(
+        ds_out["tracer_uncertainty"].where(ds_out.Z <= 300, drop=True).mean(
             "longitude"
         ).plot(
             ax=axes[1],
             cmap="Oranges",
             yincrease=False,
-            vmin=-4,
-            vmax=0.5,
+            # vmin=-4,
+            # vmax=0.5,
         )
         axes[1].set_title("Zonal-mean uncertainty σ")
         plt.tight_layout()

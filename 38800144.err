@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/home/users/thopri/AISIT/MW_anomaly2.py", line 196, in <module>
+    app.run()
+    ~~~~~~~^^
+  File "/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/marimo/_ast/app.py", line 775, in run
+    ).run()
+      ~~~^^
+  File "/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/marimo/_runtime/app/script_runner.py", line 242, in run
+    raise e.__cause__ from None  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/users/thopri/AISIT/MW_anomaly2.py", line 77, in <module>
+    - (ds_o["predicted_tracer"] - delta_mar) * (S_mar - S_sim)
+    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/xarray/core/dataset.py", line 1368, in __getitem__
+    raise KeyError(message) from e
+KeyError: "No variable named 'predicted_tracer'. Variables on the dataset include ['tracer_pred', 'tracer_uncertainty', 'depth', 'time', 'latitude', 'longitude']"

@@ -13,7 +13,7 @@ import torch.nn as nn
 import xarray as xr
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader, TensorDataset
-
+from pyproj import Transformer
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -646,13 +646,14 @@ def infer_on_model_field(
     """
     import xarray as xr
 
-    # ── Candidate variable names ───────────────────────────────────────────────
-    _TEMP_VARS = ["temp", "temperature", "thetao", "votemper", "potential_temperature"]
-    _SALT_VARS = ["salinity", "salt", "so", "vosaline", "practical_salinity"]
+    # ── Candidate variable names ───────────────────────────────────────────────THETA', 'SALT', 'EVEL', 'NVEL', 'WVEL'
+    _TEMP_VARS = ["temp", "temperature", "thetao", "votemper", "potential_temperature","THETA"]
+    _SALT_VARS = ["salinity", "salt", "so", "vosaline", "practical_salinity","SALT"]
     _UVEL_VARS = [
         # "u",
         # "uo",
         "vxo",
+        "EVEL",
         # "vozocrtx",
         # "u_velocity",
         # "UVEL",
@@ -662,12 +663,13 @@ def infer_on_model_field(
         # "v",
         # "vo",
         "vyo",
+        "NVEL",
         # "vomecrty",
         # "v_velocity",
         # "VVEL",
         # "northward_sea_water_velocity",
     ]
-    _DEPTH_NAMES = ["depth", "deptht", "depthu", "depthv", "z", "lev", "level"]
+    _DEPTH_NAMES = ["depth", "deptht", "depthu", "depthv", "Z","z", "lev", "level"]
     _LAT_NAMES = ["lat", "latitude", "nav_lat", "yt_ocean", "nlat", "y"]
     _LON_NAMES = ["lon", "longitude", "nav_lon", "xt_ocean", "nlon", "x"]
     _TIME_NAMES = ["time", "time_counter", "t", "time_0", "time_centered"]
@@ -757,6 +759,22 @@ def infer_on_model_field(
         depth_vals[:, np.newaxis, np.newaxis], temp_3d.shape
     ).copy()
 
+    # 2. Define the Target Polar Stereographic Projection (EPSG:3413)
+    # Central meridian (lon_0) for EPSG:3413 is -45 degrees (Greenland)
+    lon_0 = -45.0 
+    
+    # Define coordinate transformer (WGS84 lat-lon to NSIDC Polar Stereographic North)
+    transformer = Transformer.from_crs("EPSG:4326", "EPSG:3413", always_xy=True)
+    x_grid, y_grid = transformer.transform(lon_3d, lat_3d)
+    
+    # 3. Calculate the Grid Convergence Angle (gamma)
+    # Convert angles to radians for numpy trigonometric functions
+    gamma = np.radians(lon_3d - lon_0)
+    
+    # 4. Perform the Vector Rotation
+    u_3d = u_3d * np.cos(gamma) - v_3d * np.sin(gamma)
+    v_3d = u_3d * np.sin(gamma) + v_3d * np.cos(gamma)
+
     # ── Flatten ───────────────────────────────────────────────────────────────
     T_flat = temp_3d.ravel()
     S_flat = salt_3d.ravel()
@@ -766,14 +784,14 @@ def infer_on_model_field(
     u_flat = u_3d.ravel()
     v_flat = v_3d.ravel()
 
-    # rotate velocities
-    X, Y = u_flat, v_flat
-    X_src_crs = X / np.cos(lat_f/ 180 * np.pi)
-    Y_src_crs = Y
-    magnitude = np.sqrt(X**2 + Y**2)
-    magn_src_crs = np.sqrt(X_src_crs**2 + Y_src_crs**2)
-    u_flat = X_src_crs * magnitude / magn_src_crs
-    v_flat = Y_src_crs * magnitude / magn_src_crs
+    # # rotate velocities
+    # X, Y = u_flat, v_flat
+    # X_src_crs = X / np.cos(lat_f/ 180 * np.pi)
+    # Y_src_crs = Y
+    # magnitude = np.sqrt(X**2 + Y**2)
+    # magn_src_crs = np.sqrt(X_src_crs**2 + Y_src_crs**2)
+    # u_flat = X_src_crs * magnitude / magn_src_crs
+    # v_flat = Y_src_crs * magnitude / magn_src_crs
         
 
     # ── TEOS-10 ───────────────────────────────────────────────────────────────

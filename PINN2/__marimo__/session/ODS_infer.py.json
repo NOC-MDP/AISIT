@@ -1,0 +1,133 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.23.9",
+    "script_metadata_hash": "7d6ef8f2ffd6c6a3b182fb5b40a6e7fd"
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "8000c5c6300829ac5e6e00a0dcb98ea7",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "interruption",
+          "evalue": "This cell was interrupted and needs to be re-run",
+          "traceback": []
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stderr",
+          "text": "<span class=\"codehilite\"><div class=\"highlight\"><pre><span></span><span class=\"gt\">Traceback (most recent call last):</span>\n  File <span class=\"nb\">&quot;/tmp/marimo_188/__marimo__cell_Hbol_.py&quot;</span>, line <span class=\"m\">5</span>, in <span class=\"n\">&lt;module&gt;</span>\n<span class=\"w\">    </span><span class=\"kn\">from</span><span class=\"w\"> </span><span class=\"nn\">nemo_cookbook</span><span class=\"w\"> </span><span class=\"kn\">import</span> <span class=\"n\">NEMODataTree</span>\n  File <span class=\"nb\">&quot;/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/nemo_cookbook/__init__.py&quot;</span>, line <span class=\"m\">20</span>, in <span class=\"n\">&lt;module&gt;</span>\n<span class=\"w\">    </span><span class=\"kn\">from</span><span class=\"w\"> </span><span class=\"nn\">nemo_cookbook.nemodataarray</span><span class=\"w\"> </span><span class=\"kn\">import</span> <span class=\"n\">NEMODataArray</span>\n  File <span class=\"nb\">&quot;/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/nemo_cookbook/nemodataarray.py&quot;</span>, line <span class=\"m\">20</span>, in <span class=\"n\">&lt;module&gt;</span>\n<span class=\"w\">    </span><span class=\"kn\">import</span><span class=\"w\"> </span><span class=\"nn\">cartopy.crs</span><span class=\"w\"> </span><span class=\"k\">as</span><span class=\"w\"> </span><span class=\"nn\">ccrs</span>\n  File <span class=\"nb\">&quot;/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/cartopy/__init__.py&quot;</span>, line <span class=\"m\">106</span>, in <span class=\"n\">&lt;module&gt;</span>\n<span class=\"w\">    </span><span class=\"kn\">import</span><span class=\"w\"> </span><span class=\"nn\">cartopy.crs</span>  <span class=\"c1\"># noqa: E402  module-level imports</span>\n<span class=\"w\">    </span><span class=\"pm\">^^^^^^^^^^^^^^^^^^</span>\n  File <span class=\"nb\">&quot;/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/cartopy/crs.py&quot;</span>, line <span class=\"m\">21</span>, in <span class=\"n\">&lt;module&gt;</span>\n<span class=\"w\">    </span><span class=\"kn\">import</span><span class=\"w\"> </span><span class=\"nn\">pyproj</span>\n  File <span class=\"nb\">&quot;/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/pyproj/__init__.py&quot;</span>, line <span class=\"m\">67</span>, in <span class=\"n\">&lt;module&gt;</span>\n<span class=\"w\">    </span><span class=\"kn\">from</span><span class=\"w\"> </span><span class=\"nn\">pyproj.proj</span><span class=\"w\"> </span><span class=\"kn\">import</span> <span class=\"n\">Proj</span><span class=\"p\">,</span> <span class=\"n\">pj_list</span>  <span class=\"c1\"># noqa: F401 pylint: disable=unused-import</span>\n<span class=\"w\">    </span><span class=\"pm\">^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>\n  File <span class=\"nb\">&quot;/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/pyproj/proj.py&quot;</span>, line <span class=\"m\">27</span>, in <span class=\"n\">&lt;module&gt;</span>\n<span class=\"w\">    </span><span class=\"kn\">from</span><span class=\"w\"> </span><span class=\"nn\">pyproj.transformer</span><span class=\"w\"> </span><span class=\"kn\">import</span> <span class=\"n\">Transformer</span><span class=\"p\">,</span> <span class=\"n\">TransformerFromPipeline</span>\n  File <span class=\"nb\">&quot;/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/pyproj/transformer.py&quot;</span>, line <span class=\"m\">34</span>, in <span class=\"n\">&lt;module&gt;</span>\n<span class=\"w\">    </span><span class=\"kn\">from</span><span class=\"w\"> </span><span class=\"nn\">pyproj.sync</span><span class=\"w\"> </span><span class=\"kn\">import</span> <span class=\"n\">_download_resource_file</span>\n  File <span class=\"nb\">&quot;/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/pyproj/sync.py&quot;</span>, line <span class=\"m\">16</span>, in <span class=\"n\">&lt;module&gt;</span>\n<span class=\"w\">    </span><span class=\"kn\">from</span><span class=\"w\"> </span><span class=\"nn\">pyproj._sync</span><span class=\"w\"> </span><span class=\"kn\">import</span> <span class=\"n\">get_proj_endpoint</span>\n  File <span class=\"nb\">&quot;&lt;frozen importlib._bootstrap&gt;&quot;</span>, line <span class=\"m\">648</span>, in <span class=\"n\">parent</span>\n  File <span class=\"nb\">&quot;/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/marimo/_runtime/handlers.py&quot;</span>, line <span class=\"m\">51</span>, in <span class=\"n\">interrupt_handler</span>\n<span class=\"w\">    </span><span class=\"k\">raise</span> <span class=\"n\">MarimoInterrupt</span>\n<span class=\"gr\">KeyboardInterrupt</span>\n</pre></div>\n</span>",
+          "mimetype": "application/vnd.marimo+traceback"
+        }
+      ]
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "c5a1799daa0246ff3a76c5469dad6a2f",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "interruption",
+          "evalue": "This cell was interrupted and needs to be re-run",
+          "traceback": []
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "5661b601b53f01203f64e8ed26c7f65f",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "exception",
+          "evalue": "An ancestor raised an exception (KeyboardInterrupt): ",
+          "traceback": null
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "cuda\n\u2500\u2500 Loading checkpoint \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  Checkpoint   : /home/users/thopri/AISIT/PINN2/output_v1.0.0/pinn_tracer.pt\n  Architecture : hidden_dim=256, n_blocks=4, n_features=14\n  Features     : ['sigma0', 'spice', 'sigma2', 'log_depth', 'log_n2', 'year_norm', 'season_sin', 'season_cos', 'lat_norm', 'lon_sin', 'lon_cos', 'log_speed', 'flow_sin', 'flow_cos']\n",
+          "mimetype": "text/plain"
+        },
+        {
+          "type": "stream",
+          "name": "stderr",
+          "text": "/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/dask/array/core.py:5200: PerformanceWarning: Increasing number of chunks by factor of 12\n  result = blockwise(\n/home/users/thopri/micromamba/envs/AISIT2/lib/python3.14/site-packages/dask/array/core.py:5200: PerformanceWarning: Increasing number of chunks by factor of 12\n  result = blockwise(\n",
+          "mimetype": "text/plain"
+        },
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "<xarray.DataTree 'NEMO model'>\nGroup: /\n\u2502   Dimensions:               (time_counter: 12, axis_nbounds: 2)\n\u2502   Coordinates:\n\u2502     * time_counter          (time_counter) datetime64[ns] 96B 1976-01-16T12:00:...\n\u2502       time_centered         (time_counter) datetime64[ns] 96B dask.array<chunksize=(1,), meta=np.ndarray>\n\u2502   Dimensions without coordinates: axis_nbounds\n\u2502   Data variables:\n\u2502       time_centered_bounds  (time_counter, axis_nbounds) datetime64[ns] 192B dask.array<chunksize=(1, 2), meta=np.ndarray>\n\u2502       time_counter_bounds   (time_counter, axis_nbounds) datetime64[ns] 192B dask.array<chunksize=(1, 2), meta=np.ndarray>\n\u2502   Attributes:\n\u2502       nftype:   None\n\u2502       iperio:   False\n\u251c\u2500\u2500 Group: /gridT\n\u2502       Dimensions:               (time_counter: 12, k: 75, j: 693, i: 3665,\n\u2502                                  axis_nbounds: 2)\n\u2502       Coordinates:\n\u2502           time_centered         (time_counter) datetime64[ns] 96B dask.array<chunksize=(1,), meta=np.ndarray>\n\u2502         * k                     (k) int64 600B 1 2 3 4 5 6 7 ... 69 70 71 72 73 74 75\n\u2502         * deptht                (k) float32 300B 0.5058 1.556 ... 5.698e+03 5.902e+03\n\u2502         * j                     (j) int64 6kB 2913 2914 2915 2916 ... 3603 3604 3605\n\u2502         * i                     (i) int64 29kB 329 330 331 332 ... 3990 3991 3992 3993\n\u2502           gphit                 (j, i) float64 20MB dask.array<chunksize=(693, 212), meta=np.ndarray>\n\u2502           glamt                 (j, i) float64 20MB dask.array<chunksize=(693, 212), meta=np.ndarray>\n\u2502       Dimensions without coordinates: axis_nbounds\n\u2502       Data variables: (12/15)\n\u2502           e3t                   (time_counter, k, j, i) float32 9GB dask.array<chunksize=(1, 25, 693, 212), meta=np.ndarray>\n\u2502           vohflisf              (time_counter, k, j, i) float32 9GB dask.array<chunksize=(1, 25, 693, 212), meta=np.ndarray>\n\u2502           thetao_con            (time_counter, k, j, i) float32 9GB dask.array<chunksize=(1, 25, 693, 212), meta=np.ndarray>\n\u2502           time_centered_bounds  (time_counter, axis_nbounds, j, i) datetime64[ns] 488MB dask.array<chunksize=(1, 2, 693, 212), meta=np.ndarray>\n\u2502           rsdo                  (time_counter, k, j, i) float32 9GB dask.array<chunksize=(1, 25, 693, 212), meta=np.ndarray>\n\u2502           vohfcisf              (time_counter, k, j, i) float32 9GB dask.array<chunksize=(1, 25, 693, 212), meta=np.ndarray>\n\u2502           ...                    ...\n\u2502           e1t                   (j, i) float64 20MB dask.array<chunksize=(693, 212), meta=np.ndarray>\n\u2502           e2t                   (j, i) float64 20MB dask.array<chunksize=(693, 212), meta=np.ndarray>\n\u2502           tmask                 (k, j, i) bool 190MB dask.array<chunksize=(25, 693, 212), meta=np.ndarray>\n\u2502           tmaskutil             (j, i) bool 3MB dask.array<chunksize=(693, 212), meta=np.ndarray>\n\u2502           uo                    (time_counter, k, j, i) float64 18GB dask.array<chunksize=(1, 25, 693, 212), meta=np.ndarray>\n\u2502           vo                    (time_counter, k, j, i) float64 18GB dask.array<chunksize=(1, 25, 693, 212), meta=np.ndarray>\n\u2502       Attributes: (12/34)\n\u2502           name:                        OUTPUT/eORCA12_1m_grid_T\n\u2502           description:                 NOC Near-Present Day monthly mean global oce...\n\u2502           title:                       National Oceanography Centre Near-Present Da...\n\u2502           Conventions:                 CF-1.6\n\u2502           timeStamp:                   2026-Jun-01 11:47:50 GMT\n\u2502           uuid:                        29ab77b0-0866-4db6-bb59-a4e1efb39a6d\n\u2502           ...                          ...\n\u2502           biogeochemistry_component:   None\n\u2502           atmospheric_component:       None\n\u2502           atmospheric_forcing:         ERA5 v1\n\u2502           variant:                     r1i1c1f1\n\u2502           nftype:                      None\n\u2502           iperio:                      False\n\u251c\u2500\u2500 Group: /gridU\n\u2502       Dimensions:               (time_counter: 12, k: 75, j: 693, i: 3665,\n\u2502                                  axis_nbounds: 2)\n\u2502       Coordinates:\n\u2502           time_centered         (time_counter) datetime64[ns] 96B dask.array<chunksize=(1,), meta=np.ndarray>\n\u2502         * k                     (k) int64 600B 1 2 3 4 5 6 7 ... 69 70 71 72 73 74 75\n\u2502         * depthu                (k) float32 300B 0.5058 1.556 ... 5.698e+03 5.902e+03\n\u2502         * j                     (j) int64 6kB 2913 2914 2915 2916 ... 3603 3604 3605\n\u2502         * i                     (i) float64 29kB 329.5 330.5 ... 3.992e+03 3.994e+03\n\u2502           gphiu                 (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502           glamu                 (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502       Dimensions without coordinates: axis_nbounds\n\u2502       Data variables:\n\u2502           u2o                   (time_counter, k, j, i) float32 9GB dask.array<chunksize=(1, 25, 693, 540), meta=np.ndarray>\n\u2502           e3u                   (time_counter, k, j, i) float32 9GB dask.array<chunksize=(1, 25, 693, 540), meta=np.ndarray>\n\u2502           umo                   (time_counter, k, j, i) float32 9GB dask.array<chunksize=(1, 25, 693, 540), meta=np.ndarray>\n\u2502           time_counter_bounds   (time_counter, axis_nbounds) datetime64[ns] 192B dask.array<chunksize=(1, 2), meta=np.ndarray>\n\u2502           time_centered_bounds  (time_counter, axis_nbounds) datetime64[ns] 192B dask.array<chunksize=(1, 2), meta=np.ndarray>\n\u2502           uo                    (time_counter, k, j, i) float32 9GB dask.array<chunksize=(1, 25, 693, 540), meta=np.ndarray>\n\u2502           e1u                   (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502           e2u                   (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502           umask                 (k, j, i) bool 190MB dask.array<chunksize=(25, 693, 540), meta=np.ndarray>\n\u2502           umaskutil             (j, i) bool 3MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502       Attributes: (12/34)\n\u2502           name:                        OUTPUT/eORCA12_1m_grid_U\n\u2502           description:                 NOC Near-Present Day monthly mean global oce...\n\u2502           title:                       National Oceanography Centre Near-Present Da...\n\u2502           Conventions:                 CF-1.6\n\u2502           timeStamp:                   2026-Jun-01 11:47:32 GMT\n\u2502           uuid:                        72b04b69-8049-4b6b-ab6c-2ca7c53c23f1\n\u2502           ...                          ...\n\u2502           biogeochemistry_component:   None\n\u2502           atmospheric_component:       None\n\u2502           atmospheric_forcing:         ERA5 v1\n\u2502           variant:                     r1i1c1f1\n\u2502           nftype:                      None\n\u2502           iperio:                      False\n\u251c\u2500\u2500 Group: /gridV\n\u2502       Dimensions:               (time_counter: 12, k: 75, j: 693, i: 3665,\n\u2502                                  axis_nbounds: 2)\n\u2502       Coordinates:\n\u2502           time_centered         (time_counter) datetime64[ns] 96B dask.array<chunksize=(1,), meta=np.ndarray>\n\u2502         * k                     (k) int64 600B 1 2 3 4 5 6 7 ... 69 70 71 72 73 74 75\n\u2502         * depthv                (k) float32 300B 0.5058 1.556 ... 5.698e+03 5.902e+03\n\u2502         * j                     (j) float64 6kB 2.914e+03 2.914e+03 ... 3.606e+03\n\u2502         * i                     (i) int64 29kB 329 330 331 332 ... 3990 3991 3992 3993\n\u2502           gphiv                 (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502           glamv                 (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502       Dimensions without coordinates: axis_nbounds\n\u2502       Data variables:\n\u2502           e3v                   (time_counter, k, j, i) float32 9GB dask.array<chunksize=(1, 25, 693, 540), meta=np.ndarray>\n\u2502           time_counter_bounds   (time_counter, axis_nbounds) datetime64[ns] 192B dask.array<chunksize=(1, 2), meta=np.ndarray>\n\u2502           vmo                   (time_counter, k, j, i) float32 9GB dask.array<chunksize=(1, 25, 693, 540), meta=np.ndarray>\n\u2502           v2o                   (time_counter, k, j, i) float32 9GB dask.array<chunksize=(1, 25, 693, 540), meta=np.ndarray>\n\u2502           time_centered_bounds  (time_counter, axis_nbounds) datetime64[ns] 192B dask.array<chunksize=(1, 2), meta=np.ndarray>\n\u2502           vo                    (time_counter, k, j, i) float32 9GB dask.array<chunksize=(1, 25, 693, 540), meta=np.ndarray>\n\u2502           e1v                   (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502           e2v                   (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502           vmask                 (k, j, i) bool 190MB dask.array<chunksize=(25, 693, 540), meta=np.ndarray>\n\u2502           vmaskutil             (j, i) bool 3MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502       Attributes: (12/34)\n\u2502           name:                        OUTPUT/eORCA12_1m_grid_V\n\u2502           description:                 NOC Near-Present Day monthly mean global oce...\n\u2502           title:                       National Oceanography Centre Near-Present Da...\n\u2502           Conventions:                 CF-1.6\n\u2502           timeStamp:                   2026-Jun-01 11:47:32 GMT\n\u2502           uuid:                        c9a00019-2477-4b4b-942b-bac2364c0a12\n\u2502           ...                          ...\n\u2502           biogeochemistry_component:   None\n\u2502           atmospheric_component:       None\n\u2502           atmospheric_forcing:         ERA5 v1\n\u2502           variant:                     r1i1c1f1\n\u2502           nftype:                      None\n\u2502           iperio:                      False\n\u251c\u2500\u2500 Group: /gridW\n\u2502       Dimensions:       (j: 693, i: 3665, k: 75)\n\u2502       Coordinates:\n\u2502         * j             (j) int64 6kB 2913 2914 2915 2916 2917 ... 3602 3603 3604 3605\n\u2502         * i             (i) int64 29kB 329 330 331 332 333 ... 3990 3991 3992 3993\n\u2502           gphiw         (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502           glamw         (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502         * k             (k) float64 600B 0.5 1.5 2.5 3.5 4.5 ... 71.5 72.5 73.5 74.5\n\u2502       Data variables:\n\u2502           e1w           (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502           e2w           (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502           wmask         (k, j, i) bool 190MB dask.array<chunksize=(25, 693, 540), meta=np.ndarray>\n\u2502           wmaskutil     (j, i) bool 3MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n\u2502       Attributes:\n\u2502           nftype:   None\n\u2502           iperio:   False\n\u2514\u2500\u2500 Group: /gridF\n        Dimensions:       (j: 693, i: 3665, k: 75)\n        Coordinates:\n          * j             (j) float64 6kB 2.914e+03 2.914e+03 ... 3.604e+03 3.606e+03\n          * i             (i) float64 29kB 329.5 330.5 331.5 ... 3.992e+03 3.994e+03\n            gphif         (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n            glamf         (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n          * k             (k) int64 600B 1 2 3 4 5 6 7 8 9 ... 68 69 70 71 72 73 74 75\n        Data variables:\n            e1f           (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n            e2f           (j, i) float64 20MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n            fmask         (k, j, i) bool 190MB dask.array<chunksize=(25, 693, 540), meta=np.ndarray>\n            fmaskutil     (j, i) bool 3MB dask.array<chunksize=(693, 540), meta=np.ndarray>\n        Attributes:\n            nftype:   None\n            iperio:   False\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "lxbn",
+      "code_hash": "ca0c46aa1e918da0406c668c76728477",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "interruption",
+          "evalue": "This cell was interrupted and needs to be re-run",
+          "traceback": []
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "3b67053e9b68d1f9bd5990226983e672",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "interruption",
+          "evalue": "This cell was interrupted and needs to be re-run",
+          "traceback": []
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "Starting ML prediction pipeline execution...\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "742a77415373a66d50af24431b05ee5d",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "exception",
+          "evalue": "An ancestor raised an exception (KeyboardInterrupt): ",
+          "traceback": null
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "5e657cdbfa836393d95c07d84cb35fed",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "exception",
+          "evalue": "An ancestor raised an exception (KeyboardInterrupt): ",
+          "traceback": null
+        }
+      ],
+      "console": []
+    }
+  ]
+}
