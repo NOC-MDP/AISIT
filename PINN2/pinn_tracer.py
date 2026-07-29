@@ -61,10 +61,12 @@ def build_features(df, cast_col="cast_id"):
             )
 
     # ── TEOS-10 isopycnal coordinates ─────────────────────────────────────────
+    # 1. Convert depth to sea pressure (dbar)
+    p = gsw.p_from_z(-df["depth"].values, df["lat"].values)
     SA = gsw.SA_from_SP(
-        df["salinity"].values, df["depth"].values, df["lon"].values, df["lat"].values
+        df["salinity"].values, p, df["lon"].values, df["lat"].values
     )
-    CT = gsw.CT_from_t(SA, df["temperature"].values, df["depth"].values)
+    CT = gsw.CT_from_t(SA, df["temperature"].values, p)
     sigma0 = gsw.sigma0(SA, CT)
     spice = gsw.spiciness0(SA, CT)
     sigma2 = gsw.sigma2(SA, CT)
@@ -796,11 +798,11 @@ def infer_on_model_field(
     # u_flat = X_src_crs * magnitude / magn_src_crs
     # v_flat = Y_src_crs * magnitude / magn_src_crs
 
-
+    # TODO this should be refactored into build features function
     # ── TEOS-10 ───────────────────────────────────────────────────────────────
-    SA = gsw.SA_from_SP(S_flat, z_flat, lon_f, lat_f)
-    CT = gsw.CT_from_t(SA, T_flat, z_flat)
     p_flat = gsw.p_from_z(-z_flat, lat_f)
+    SA = gsw.SA_from_SP(S_flat, p_flat, lon_f, lat_f)
+    CT = gsw.CT_from_pt(SA, T_flat)
     sigma0 = gsw.sigma0(SA, CT)
     spice = gsw.spiciness0(SA, CT)
     sigma2 = gsw.sigma2(SA, CT)

@@ -529,7 +529,7 @@ def main():
 
     # ── 2. Feature engineering ────────────────────────────────────────────────
     print("── 2. Engineering features (TEOS-10 + velocity) ────────────")
-    X, y, feat_names, valid_mask = build_features(df, cast_col=args.cast_col)
+    X, y, feat_names, valid_mask = build_features(df, cast_col=args.cast_col,temperature_standard="in-situ")
     df_valid = df.iloc[valid_mask].reset_index(drop=True)
     years = df_valid["year"].values
 
