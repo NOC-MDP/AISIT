@@ -61,24 +61,26 @@ def build_features(df, cast_col="cast_id"):
             )
 
     # ── TEOS-10 isopycnal coordinates ─────────────────────────────────────────
-    SA = gsw.SA_from_SP(
-        df["salinity"].values, df["depth"].values, df["lon"].values, df["lat"].values
-    )
-    CT = gsw.CT_from_t(SA, df["temperature"].values, df["depth"].values)
+    # SA = gsw.SA_from_SP(
+    #     df["salinity"].values, df["depth"].values, df["lon"].values, df["lat"].values
+    # )
+    # CT = gsw.CT_from_t(SA, df["temperature"].values, df["depth"].values)
+    SA = df['salinity'].values
+    CT = df['temperature'].values
     sigma0 = gsw.sigma0(SA, CT)
     spice = gsw.spiciness0(SA, CT)
-    sigma2 = gsw.sigma2(SA, CT)
+    # sigma2 = gsw.sigma2(SA, CT)
 
-    # ── Stratification (N²) per cast ──────────────────────────────────────────
-    log_n2 = _compute_log_n2(df, cast_col)
+    # # ── Stratification (N²) per cast ──────────────────────────────────────────
+    # log_n2 = _compute_log_n2(df, cast_col)
 
     # ── Depth ─────────────────────────────────────────────────────────────────
     log_depth = np.log1p(np.abs(df["depth"].values))
 
     # ── Temporal ──────────────────────────────────────────────────────────────
     year_norm = (df["year"].values - 1970) / 53.0
-    season_sin = np.sin(2 * np.pi * df["month"].values / 12)
-    season_cos = np.cos(2 * np.pi * df["month"].values / 12)
+    # season_sin = np.sin(2 * np.pi * df["month"].values / 12)
+    # season_cos = np.cos(2 * np.pi * df["month"].values / 12)
 
     # ── Geographic position (periodic encoding) ───────────────────────────────
     #
@@ -120,12 +122,12 @@ def build_features(df, cast_col="cast_id"):
     feature_names = [
         "sigma0",
         "spice",
-        "sigma2",
+        # "sigma2",
         "log_depth",
-        "log_n2",
+        # "log_n2",
         "year_norm",
-        "season_sin",
-        "season_cos",
+        # "season_sin",
+        # "season_cos",
         "lat_norm",
         "lon_sin",
         "lon_cos",
@@ -138,12 +140,12 @@ def build_features(df, cast_col="cast_id"):
         [
             sigma0,
             spice,
-            sigma2,
+            # sigma2,
             log_depth,
-            log_n2,
+            # log_n2,
             year_norm,
-            season_sin,
-            season_cos,
+            # season_sin,
+            # season_cos,
             lat_norm,
             lon_sin,
             lon_cos,
@@ -256,7 +258,7 @@ def physics_losses(model, x_batch, feature_names, u_raw, v_raw):
     dC_dlon_sin = grads[:, idx["lon_sin"]]
     dC_dlon_cos = grads[:, idx["lon_cos"]]
     dC_dlon = dC_dlon_sin + dC_dlon_cos # this may not be best way
-    log_n2 = x_batch[:, idx["log_n2"]]
+    # log_n2 = x_batch[:, idx["log_n2"]]
 
     # ── L1: diapycnal / along-isopycnal ratio ─────────────────────────────────
     L_diapycnal = (dC_dspi**2 / (dC_dsig.detach() ** 2 + eps)).mean()
@@ -271,8 +273,9 @@ def physics_losses(model, x_batch, feature_names, u_raw, v_raw):
     L_secular = (torch.clamp(dC_dyr.abs() - 3.0, min=0) ** 2).mean()
 
     # ── L4: stratification-weighted diapycnal penalty ─────────────────────────
-    w_mix = torch.sigmoid(-log_n2)  # high N² → small weight
-    L_strat = (w_mix.detach() * dC_dsig**2).mean()
+    # w_mix = torch.sigmoid(-log_n2)  # high N² → small weight
+    # L_strat = (w_mix.detach() * dC_dsig**2).mean()
+    L_strat = 0
 
     # ── L5: along-stream tracer gradient  ← NEW ──────────────────────────────
     #
