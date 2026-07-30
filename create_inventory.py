@@ -1,10 +1,4 @@
 import os
-# Must be set before netCDF4/h5py/xarray import — HDF5 reads this at library
-# init. JASMIN's GWS/scratch filesystems don't reliably support HDF5's native
-# file locking, and with parallel=True multiple Dask workers open files
-# concurrently, which trips it and raises "Can't open HDF5 attribute".
-os.environ.setdefault("HDF5_USE_FILE_LOCKING", "FALSE")
-
 import time
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -251,14 +245,17 @@ def main():
     log_status("Dask computation completed successfully!")
 
     # --- 7. SAVE TO DISK ---
-    ds.to_netcdf(cfg['frac_output_path'])
+    ds.to_netcdf(f"{cfg['work_dir']}/{cfg['frac_output_path']}")
     log_status(f"Saved meteoric and seaicemet fractions to: {cfg['frac_output_path']}")
-    mw_ds.to_netcdf(cfg['mw_output_path'])
+    mw_ds.to_netcdf(f"{cfg['work_dir']}/{cfg['mw_output_path']}")
     log_status(f"Saved meteoric dataset with uncertainties to: {cfg['mw_output_path']}")
-    sim_ds.to_netcdf(cfg['sim_output_path'])
+    sim_ds.to_netcdf(f"{cfg['work_dir']}/{cfg['sim_output_path']}")
     log_status(
         f"Saved sea ice melt dataset with uncertainties to: {cfg['sim_output_path']}"
     )
 
     client.close()
     cluster.close()
+
+if __name__ == "__main__":
+    main()

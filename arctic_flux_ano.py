@@ -40,7 +40,8 @@ cfg = {
 # Arctic = {}
 
 # Flux Transects
-transects = {#Nares_Strait : {},
+transects = {
+"Davis_Strait" : {'lat1':66.665,"lon1":-61.646,"lat2":67.117,"lon2":-53.641,"num_points": 50},
 "N_Baffin_Bay" : {'lat1':73.447,"lon1":-77.783,"lat2":76.448,"lon2":-68.575,"num_points": 50},
 "Fram_Strait" : {'lat1':81.432,"lon1":-12.256,"lat2":79.551,"lon2":11.428,"num_points": 50},
 "Bering_Strait" : {'lat1':67.866,"lon1":-164.361,"lat2":66.337,"lon2":-171.163,"num_points": 50},
@@ -464,7 +465,7 @@ def main():
         sim_cell_flux_m3s = v_normal * f_sim_trans * dz_trans * da_ds
 
         sim_total_flux_m3s = sim_cell_flux_m3s.sum(dim=["Z", "segment"])
-        sim_flux_mSv = sim_total_flux_m3s / 1000.0
+        sim_flux_mSv = sim_total_flux_m3s / 1000.0 * -1
         sim_flux_mSv.name = f"seaicemelt_flux_{t_name}"
         sim_flux_mSv.attrs["units"] = "mSv"
         sim_flux_mSv.attrs["description"] = (
@@ -474,7 +475,7 @@ def main():
         met_cell_flux_m3s = v_normal * f_met_trans * dz_trans * da_ds
 
         met_total_flux_m3s = met_cell_flux_m3s.sum(dim=["Z", "segment"])
-        met_flux_mSv = met_total_flux_m3s / 1000.0
+        met_flux_mSv = met_total_flux_m3s / 1000.0 * -1
         met_flux_mSv.name = f"met_flux_{t_name}"
         met_flux_mSv.attrs["units"] = "mSv"
         met_flux_mSv.attrs["description"] = (

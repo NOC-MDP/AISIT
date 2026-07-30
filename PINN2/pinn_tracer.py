@@ -798,7 +798,7 @@ def infer_on_model_field(
     # u_flat = X_src_crs * magnitude / magn_src_crs
     # v_flat = Y_src_crs * magnitude / magn_src_crs
 
-    # TODO this should be refactored into build features function
+    # TODO this should be refactored into build features function or inference should be entirely seperate
     # ── TEOS-10 ───────────────────────────────────────────────────────────────
     p_flat = gsw.p_from_z(-z_flat, lat_f)
     SA = gsw.SA_from_SP(S_flat, p_flat, lon_f, lat_f)

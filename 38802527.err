@@ -1,2 +1,0 @@
-/var/spool/slurmd/job38802527/slurm_script: line 13: 2029842 Killed                  python MW_anomaly2.py
-[2026-07-09T18:35:35.558] error: Detected 1 oom_kill event in StepId=38802527.batch. Some of the step tasks have been OOM Killed.
