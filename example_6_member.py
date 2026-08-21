@@ -127,7 +127,7 @@ def run_6comp_monte_carlo(
 # Sample Observation: Mixed surface layer with Pacific, North American River, and Greenland Glacial Discharge
 sample_sal = 28.5
 sample_d18O = -4.5
-sample_ba = 68.0
+sample_ba = 128.0
 sample_ta = 1350.0  # Reduced TA driven by zero-alkalinity glacier melt dilution
 
 stats, mc_runs = run_6comp_monte_carlo(

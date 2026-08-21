@@ -1,84 +1,65 @@
 import numpy as np
 import xarray as xr
-from scipy.optimize import lsq_linear
+from scipy.optimize import nnls
 from dask.distributed import Client, LocalCluster
+import numba
 
 # -------------------------------------------------------------------------
-# 1. Base Setup & Parameters
+# 1. Base Setup & Parameters (5 Tracers, 5 End Members)
+# Tracers: [Mass (1.0), Salinity, d18O, Barium, Potential Temp (degC)]
 # -------------------------------------------------------------------------
 base_end_members = {
-    "ATL": np.array([1.0, 34.80, 0.30, 45.0]),
-    "PAC": np.array([1.0, 32.50, -1.10, 78.0]),
-    "NAM": np.array([1.0, 0.00, -19.50, 130.0]),
-    "EUR": np.array([1.0, 0.00, -19.00, 45.0]),
-    "SIM": np.array([1.0, 4.00, 2.00, 10.0]),
+    #                [Mass,   SALT,   d18O,    Ba,    PTemp]
+    "ATL": np.array([ 1.0,  34.80,   0.30,  40.0,    5.00 ]),
+    "PAC": np.array([ 1.0,  32.50,  -1.10,  65.0,    2.50 ]),
+    "NAM": np.array([ 1.0,   0.00, -19.50, 90.0,    0.00 ]),
+    "EUR": np.array([ 1.0,   0.00, -19.00,  45.0,    0.00 ]),
+    "SIM": np.array([ 1.0,   4.00,   2.00,  10.0,   -1.80 ]),
 }
-
 end_member_std = {
-    "ATL": np.array([0.0, 0.05, 0.05, 3.0]),
-    "PAC": np.array([0.0, 0.30, 0.15, 5.0]),
-    "NAM": np.array([0.0, 0.00, 1.50, 20.0]),
-    "EUR": np.array([0.0, 0.00, 1.00, 8.0]),
-    "SIM": np.array([0.0, 1.00, 0.50, 3.0]),
+    #                [Mass,   SALT,   d18O,    Ba,    PTemp]
+    "ATL": np.array([ 0.0,   0.05,   0.05,   3.0,    0.30 ]),
+    "PAC": np.array([ 0.0,   0.30,   0.15,   5.0,    0.50 ]),
+    "NAM": np.array([ 0.0,   0.00,   1.50,  20.0,    1.00 ]),
+    "EUR": np.array([ 0.0,   0.00,   1.00,   8.0,    1.00 ]),
+    "SIM": np.array([ 0.0,   1.00,   0.50,   3.0,    0.20 ]),
 }
-
-obs_uncertainty = np.array([0.0, 0.01, 0.05, 1.5])
-weights = np.array([100.0, 25.0, 10.0, 5.0])
 water_masses = ["ATL", "PAC", "NAM", "EUR", "SIM"]
+obs_uncertainty = np.array([0.0, 0.01, 0.05, 1.5, 0.02])
+parameter_weights = np.array([100.0, 25.0, 15.0, 10.0, 20.0])
 
+A_base = np.column_stack([base_end_members[wm] for wm in water_masses])
+A_std_matrix = np.column_stack([end_member_std[wm] for wm in water_masses])
 
 # -------------------------------------------------------------------------
-# 2. Vectorized 1D Solvers (Core Engine)
+# 2. Vectorized Point/Block Solver (1D core dim = 'tracer')
 # -------------------------------------------------------------------------
-def solve_single_5comp_omp(A_raw, obs_raw, min_sim=-0.20):
-    """Solves one OMP realization for a single grid cell."""
-    mean_vals = np.mean(A_raw, axis=1)
-    std_vals = np.std(A_raw, axis=1)
-    std_vals[0] = 1.0
-    mean_vals[0] = 0.0
-
-    A_norm = (A_raw - mean_vals[:, None]) / std_vals[:, None]
-    A_weighted = A_norm * weights[:, None]
-
-    obs_norm = (obs_raw - mean_vals) / std_vals
-    obs_weighted = obs_norm * weights
-
-    lower_bounds = [0.0, 0.0, 0.0, 0.0, min_sim]
-    upper_bounds = [1.0, 1.0, 1.0, 1.0, 1.00]
-
-    res = lsq_linear(A_weighted, obs_weighted, bounds=(lower_bounds, upper_bounds))
-    x = res.x
-    f_sum = np.sum(x)
-
-    return x / f_sum if f_sum != 0 else x
-
-
-def point_monte_carlo(sal, d18O, ba, n_iter=1000, min_sim=-0.20):
+def solve_omp_1d(obs_vec, n_iter=100):
     """
-    1D target function for xr.apply_ufunc.
-    Handles NaN values (e.g., land masks) and returns mean & std.
+    Solves OMP over a single 1D tracer vector of length 5:
+    obs_vec = [Mass, Salinity, d18O, Ba, Temp]
+    Returns 1D array of length 10 -> [5 means, 5 stds]
     """
-    if np.isnan(sal) or np.isnan(d18O) or np.isnan(ba):
-        # Return NaNs for 5 means and 5 stds
-        return np.full((10,), np.nan)
+    if np.isnan(obs_vec).any():
+        return np.full((10,), np.nan, dtype=np.float64)
 
-    base_obs = np.array([1.0, sal, d18O, ba])
-    results = np.zeros((n_iter, 5))
+    n_tracers, n_members = 5, 5
+    W = parameter_weights[:, None]
 
-    for i in range(n_iter):
-        # Perturb End-Members
-        A_perturbed = np.zeros((4, 5))
-        for j, wm in enumerate(water_masses):
-            noise = np.random.normal(0, end_member_std[wm])
-            A_perturbed[:, j] = base_end_members[wm] + noise
+    # Pre-generate noise for iterations
+    noise_A = np.random.normal(0, 1, size=(n_iter, n_tracers, n_members)) * A_std_matrix[None, :, :]
+    A_perturbed = (A_base[None, :, :] + noise_A) * W[None, :, :]
 
-        # Perturb Observations
-        obs_noise = np.random.normal(0, obs_uncertainty)
-        obs_perturbed = base_obs + obs_noise
+    noise_obs = np.random.normal(0, 1, size=(n_iter, n_tracers)) * obs_uncertainty[None, :]
+    obs_perturbed = (obs_vec[None, :] + noise_obs) * parameter_weights[None, :]
 
-        results[i, :] = solve_single_5comp_omp(
-            A_perturbed, obs_perturbed, min_sim=min_sim
-        )
+    results = np.zeros((n_iter, n_members), dtype=np.float64)
+
+    # Solve across realizations using Fast Non-Negative Least Squares
+    for k in range(n_iter):
+        x, _ = nnls(A_perturbed[k], obs_perturbed[k])
+        f_sum = np.sum(x)
+        results[k, :] = x / f_sum if f_sum > 0 else x
 
     means = np.mean(results, axis=0)
     stds = np.std(results, axis=0)
@@ -87,28 +68,42 @@ def point_monte_carlo(sal, d18O, ba, n_iter=1000, min_sim=-0.20):
 
 
 # -------------------------------------------------------------------------
-# 3. xarray Wrapper Function
+# 3. Corrected xarray Wrapper (Dask-Parallelized)
 # -------------------------------------------------------------------------
-def run_omp_xarray(ds_o,ds_Ba,ds_s, sal_var="SALT", n_iter=500):
+def run_omp_xarray_fast(ds_o, ds_Ba, ds_s, sal_var="SALT", temp_var="THETA", n_iter=100):
     """
-    Runs Monte Carlo OMP across all dimensions of an xarray Dataset.
+    Applies point-wise vectorized OMP across spatial Dask chunks safely.
     """
-    # xr.apply_ufunc applies the function across all grid cells
-    combined_stats = xr.apply_ufunc(
-        point_monte_carlo,
+    # 1. Create uniform 1.0 array for Mass conservation
+    mass_arr = xr.ones_like(ds_s[sal_var])
+
+    # 2. Stack input tracers along a new 'tracer' dimension
+    obs_combined = xr.concat([
+        mass_arr,
         ds_s[sal_var],
         ds_o["tracer_pred"],
         ds_Ba["tracer_pred"],
+        ds_s[temp_var]
+    ], dim="tracer")
+
+    # Ensure tracer is unchunked (size 5)
+    obs_combined = obs_combined.chunk({"tracer": -1})
+
+    # 3. Apply ufunc (only 'tracer' is the core dimension; lat/lon remain broadcast dimensions)
+    combined_stats = xr.apply_ufunc(
+        solve_omp_1d,
+        obs_combined,
         kwargs={"n_iter": n_iter},
-        input_core_dims=[[], [], []],
+        input_core_dims=[["tracer"]],
         output_core_dims=[["stat_and_mass"]],
-        vectorize=True,
+        vectorize=True,  # Automatically loops over lat/lon chunks
         dask="parallelized",
         output_dtypes=[float],
-        dask_gufunc_kwargs={"output_sizes": {"stat_and_mass": 10}},
+        dask_gufunc_kwargs={
+            "output_sizes": {"stat_and_mass": 10}
+        },
     )
 
-    # Re-organize output vector into distinct Dataset variables
     out_ds = xr.Dataset()
     for i, wm in enumerate(water_masses):
         out_ds[f"{wm}_fraction_mean"] = combined_stats.isel(stat_and_mass=i)
@@ -154,7 +149,7 @@ if __name__ == "__main__":
     print(ds_s["SALT"].chunks)
 
     print("Running OMP Monte Carlo across xarray cube via Dask...")
-    results_ds = run_omp_xarray(ds_o, ds_Ba, ds_s, n_iter=100)
+    results_ds = run_omp_xarray_fast(ds_o, ds_Ba, ds_s, n_iter=100)
 
     # 3. Compute and Save using Dask
     # to_netcdf with dask arrays triggers distributed computation automatically
