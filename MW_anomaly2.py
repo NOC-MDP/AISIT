@@ -484,7 +484,7 @@ ax.plot(
 #     ha="center"
 # )
 
-vmax = 2.0
+vmax = 1.0
 im = sim_anomaly.plot.pcolormesh(
     ax=ax,
     x="longitude",

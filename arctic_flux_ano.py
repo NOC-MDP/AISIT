@@ -10,6 +10,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.path as mpath
 import matplotlib.pyplot as plt
+import pandas as pd
 import numpy as np
 import xarray as xr
 import dask
@@ -42,9 +43,10 @@ cfg = {
 # Flux Transects
 transects = {
 "Davis_Strait" : {'lat1':66.665,"lon1":-61.646,"lat2":67.117,"lon2":-53.641,"num_points": 50},
-"N_Baffin_Bay" : {'lat1':73.447,"lon1":-77.783,"lat2":76.448,"lon2":-68.575,"num_points": 50},
+# "N_Baffin_Bay" : {'lat1':73.447,"lon1":-77.783,"lat2":76.448,"lon2":-68.575,"num_points": 50},
 "Fram_Strait" : {'lat1':81.432,"lon1":-12.256,"lat2":79.551,"lon2":11.428,"num_points": 50},
 "Bering_Strait" : {'lat1':67.866,"lon1":-164.361,"lat2":66.337,"lon2":-171.163,"num_points": 50},
+"Barents_Sea": {'lat1':70.245,"lon1":20.724,"lat2":76.622,"lon2":16.443,"num_points": 50},
 }
 
 start_time = time.time()
@@ -462,7 +464,7 @@ def main():
 
         log_status(f"[{t_name}] Integrating total column flux...")
 
-        sim_cell_flux_m3s = v_normal * f_sim_trans * dz_trans * da_ds
+        sim_cell_flux_m3s = v_normal * f_sim_trans * dz_trans * da_ds * -1
 
         sim_total_flux_m3s = sim_cell_flux_m3s.sum(dim=["Z", "segment"])
         sim_flux_mSv = sim_total_flux_m3s / 1000.0 * -1
@@ -508,6 +510,8 @@ def main():
         # center=True aligns the window symmetrically around each date
         sim_smoothed = sim_raw.rolling(time=12, center=True).mean()
         met_smoothed = met_raw.rolling(time=12, center=True).mean()
+        sim_smoothed_std = sim_raw.rolling(time=12, center=True).std()
+        met_smoothed_std = met_raw.rolling(time=12, center=True).std()
 
         # Define distinct colors
         color_sim = "#1f77b4"  # Blue shade for Sea Ice Melt / Brine
@@ -533,12 +537,54 @@ def main():
 
         # Plot net liquid freshwater sum
         net_smoothed = sim_smoothed + met_smoothed
+        net_smoothed_std = sim_smoothed_std + met_smoothed_std
         net_smoothed.plot(
             color="black",
             linewidth=1.5,
             linestyle=":",
             label="Net Liquid Freshwater",
         )
+
+        def plot_trendline(series, color, linestyle="--", label=None):
+            valid_data = series.to_series().dropna()
+
+            if isinstance(valid_data.index, pd.DatetimeIndex):
+                x = np.arange(len(valid_data))
+                # Calculate time span in fractional years (e.g., ~1.0 for 12 monthly steps)
+                dt_years = (
+                    valid_data.index[-1] - valid_data.index[0]
+                ).days / 365.25
+                # Annual trend = total change over the fitted line divided by total years
+                slope_per_step, intercept = np.polyfit(x, valid_data.values, 1)
+                trend_y = slope_per_step * x + intercept
+
+                # Total change over time divided by elapsed years
+                annual_trend = (trend_y[-1] - trend_y[0]) / dt_years
+            else:
+                x = valid_data.index.values
+                slope_per_step, intercept = np.polyfit(x, valid_data.values, 1)
+                trend_y = slope_per_step * x + intercept
+                annual_trend = slope_per_step  # Assuming x is already in years
+
+            # Append the annual rate to the legend label
+            if label:
+                sign = "+" if annual_trend >= 0 else ""
+                label = f"{label} ({sign}{annual_trend:.2f} km³/yr²)"
+
+            trend_series = pd.Series(trend_y, index=valid_data.index)
+
+            trend_series.plot(
+                color=color,
+                linestyle=linestyle,
+                linewidth=1.2,
+                label=label,
+            )
+            return trend_series
+
+        # Add trend lines for each series
+        trend_sim = plot_trendline(sim_smoothed, color=color_sim, label="Sea Ice Melt Trend")
+        trend_met = plot_trendline(met_smoothed, color=color_met, label="Meteoric Trend")
+        trend_net = plot_trendline(net_smoothed, color="black", label="Net Liquid Trend")
 
         plt.axhline(0, color="gray", linestyle="--", linewidth=0.8)
         plt.title(
@@ -562,6 +608,24 @@ def main():
 
         plt.savefig(f"{t_name}_combined_flux.png", bbox_inches="tight")
         plt.show()
+
+        # Flatten into a 1D column-mapping dictionary
+        flat_metrics = {
+            "sea_ice_melt_mean": sim_smoothed.to_series().dropna(),
+            "sea_ice_melt_std_dev": sim_smoothed_std.to_series().dropna(),
+            "sea_ice_melt_trend": trend_sim,
+            "meteoric_mean": met_smoothed.to_series().dropna(),
+            "meteoric_std_dev": met_smoothed_std.to_series().dropna(),
+            "meteoric_trend": trend_met,
+            "net_liquid_freshwater_mean": net_smoothed.to_series().dropna(),
+            "net_liquid_freshwater_std_dev": net_smoothed_std.to_series().dropna(),
+            "net_liquid_freshwater_trend": trend_net,
+        }
+
+        # Create DataFrame with shared time index and save
+        df = pd.DataFrame(flat_metrics)
+        df.index.name = "time"
+        df.to_csv(f"{t_name}_metrics_output.csv", index=True)
 
     flux_client.close()
     flux_cluster.close()

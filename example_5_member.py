@@ -89,7 +89,7 @@ def point_monte_carlo(sal, d18O, ba, n_iter=1000, min_sim=-0.20):
 # -------------------------------------------------------------------------
 # 3. xarray Wrapper Function
 # -------------------------------------------------------------------------
-def run_omp_xarray(ds_o,ds_Ba,ds_s, sal_var="so", n_iter=500):
+def run_omp_xarray(ds_o,ds_Ba,ds_s, sal_var="SALT", n_iter=500):
     """
     Runs Monte Carlo OMP across all dimensions of an xarray Dataset.
     """
@@ -139,26 +139,27 @@ if __name__ == "__main__":
 
     MONTH = "09"
     YEAR = "2016"
+    DEPTH = 100
 
     # 2. Open Datasets WITH CHUNKS (Crucial for Dask)
     # Choose chunk sizes based on spatial/time dimensions (e.g. chunking spatial dimensions)
-    ds_o = xr.open_dataset(f"/gws/ssde/j25a/nemo/vol4/thopri/PINN/infer_output/tracer_predicted_{YEAR}_{MONTH}.nc", chunks={"latitude": 100, "longitude": 100,'depth': 1})
-    ds_Ba = xr.open_dataset(f"/gws/ssde/j25a/nemo/vol4/thopri/PINN_BARIUM/infer_output/tracer_predicted_{YEAR}_{MONTH}.nc", chunks={"latitude": 100, "longitude": 100,'depth': 1})
-    ds_s = xr.open_dataset("/work/scratch-pw5/thopri/cmems_mod_arc_phy_my_topaz4_P1M_so-thetao_180.00W-179.88E_50.00N-90.00N_0.00-4000.00m_1991-01-01-2026-04-01.nc", chunks={"time": 1, "latitude": 100, "longitude": 100,'depth': 1})
-    ds_s = ds_s.sel(time=f"{YEAR}-{MONTH}-15",depth=0, method='nearest')
-    ds_o = ds_o.sel(depth=0, method='nearest')
-    ds_Ba = ds_Ba.sel(depth=0,method='nearest')
+    ds_o = xr.open_dataset(f"/gws/ssde/j25a/nemo/vol4/thopri/PINN/infer_output_ECCO/tracer_predicted_{YEAR}_{MONTH}.nc", chunks={"latitude": 100, "longitude": 100,'Z': 1})
+    ds_Ba = xr.open_dataset(f"/gws/ssde/j25a/nemo/vol4/thopri/PINN_BARIUM/infer_output_ECCO/tracer_predicted_{YEAR}_{MONTH}.nc", chunks={"latitude": 100, "longitude": 100,'Z': 1})
+    ds_s = xr.open_dataset(f"/work/scratch-pw5/thopri/ECCO/OCEAN_TEMPERATURE_SALINITY_mon_mean_{YEAR}-{MONTH}_ECCO_V4r4_latlon_0p50deg.nc", chunks={"time": 1, "latitude": 100, "longitude": 100,'Z': 1})
+    ds_s = ds_s.sel(time=f"{YEAR}-{MONTH}-15",Z=DEPTH, method='nearest')
+    ds_o = ds_o.sel(Z=DEPTH, method='nearest')
+    ds_Ba = ds_Ba.sel(Z=DEPTH,method='nearest')
 
     # Print chunks to confirm it split into multiple tasks:
-    print(ds_s["so"].chunks)
+    print(ds_s["SALT"].chunks)
 
     print("Running OMP Monte Carlo across xarray cube via Dask...")
-    results_ds = run_omp_xarray(ds_o, ds_Ba, ds_s, n_iter=200)
+    results_ds = run_omp_xarray(ds_o, ds_Ba, ds_s, n_iter=100)
 
     # 3. Compute and Save using Dask
     # to_netcdf with dask arrays triggers distributed computation automatically
     write_job = results_ds.to_netcdf(
-        f"/gws/ssde/j25a/nemo/vol4/thopri/MASSBAL/watermass_fractions_{YEAR}_{MONTH}.nc",
+        f"/gws/ssde/j25a/nemo/vol4/thopri/MASSBAL/watermass_fractions_depth_{DEPTH}_{YEAR}_{MONTH}.nc",
         compute=False  # Returns a dask delayed object
     )
 
@@ -172,7 +173,7 @@ if __name__ == "__main__":
     sel_lat = 71
     sel_lon = -149
 
-    pt_res = results_ds.sel(time=sel_time, lat=sel_lat, lon=sel_lon,method='nearest')
+    pt_res = results_ds.sel(latitude=sel_lat, longitude=sel_lon,method='nearest')
 
     print(
         f"=== OMP Results for Single Grid Cell (time={sel_time}, lat={sel_lat}, lon={sel_lon}) ==="
@@ -192,7 +193,7 @@ if __name__ == "__main__":
     # ---------------------------------------------------------------------
     # Table Print: Spatial Mean across the entire domain for Month 1
     # ---------------------------------------------------------------------
-    domain_mean = results_ds.sel(time=sel_time).mean(dim=["lat", "lon"])
+    domain_mean = results_ds.mean(dim=["latitude", "longitude"])
 
     print(f"=== Domain-Averaged OMP Results for {sel_time} ===")
     print(

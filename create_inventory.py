@@ -13,15 +13,15 @@ import glob
 
 cfg = {
     "work_dir":"/gws/ssde/j25a/nemo/vol4/thopri/PINN",
-    "mw_output_path" : "arctic_meteoric_inventory_ECCO_1990_2025.nc",
-    "sim_output_path" : "arctic_seaicemelt_inventory_ECCO_1990_2025.nc",
-    "frac_output_path" : "arctic_fractions_ECCO_1990_2025.nc",
-    "ML_model_dir": "infer_output_ECCO/",
-    "inventory_start": 1992,
-    "inventory_end": 2017,
-    "inference_target": "/work/scratch-pw5/thopri/ECCO",
-    "salinity": "SALT",
-    "depth": "Z",
+    "mw_output_path" : "arctic_meteoric_inventory_TOPAZ4_1990_2025.nc",
+    "sim_output_path" : "arctic_seaicemelt_inventory_TOPAZ4_1990_2025.nc",
+    "frac_output_path" : "arctic_fractions_TOPAZ4_1990_2025.nc",
+    "ML_model_dir": "infer_output/",
+    "inventory_start": 1991,
+    "inventory_end": 2025,
+    "inference_target": "/work/scratch-pw5/thopri/cmems",
+    "salinity": "so",
+    "depth": "depth",
     "tracer_pred": "tracer_pred",
     "time": "time",
     "tracer_uncertainty": "tracer_uncertainty",
@@ -49,9 +49,11 @@ def log_status(message):
 
 
 def main():
+    log_status(f"creating invectory based on this configuration:")
+    log_status(f"{cfg}")
     # --- 0. INITIALIZE DASK CLUSTER ---
     log_status("Initializing Dask cluster and client...")
-    cluster = LocalCluster(n_workers=4, threads_per_worker=2, memory_limit="16GB")
+    cluster = LocalCluster(n_workers=4, threads_per_worker=1, memory_limit="16GB")
     client = Client(cluster)
     print(f"Dask Dashboard link for monitoring: {client.dashboard_link}")
 
@@ -70,9 +72,9 @@ def main():
 
 
     # --- 2. LOAD DATASETS WITH CHUNKS ---
-    chunks = {"time": 12, "Z": 10}
+    chunks = {"time": 1, "depth": 10, "latitude": 250, "longitude": 250}
     ecco_paths = ecco_paths + glob.glob(os.path.join(cfg['inference_target'], "*.nc"))
-    log_status("Loading ECCO v4r4 dataset lazily...")
+    log_status("Loading dataset lazily...")
     # Use glob to grab all NetCDF files in the folder
 
     # if not file_list:
@@ -83,7 +85,7 @@ def main():
     # coords='minimal' does the same for coordinates
     ds_s_raw = xr.open_mfdataset(
         ecco_paths, combine='by_coords', data_vars='minimal', coords='minimal',
-        compat='override', join='override'
+        compat='override', join='override',chunks=chunks
     )
     # ds_s_raw = xr.open_dataset(
     #     f"/work/scratch-pw5/thopri/cmems_mod_arc_phy_my_topaz4_P1M_so_180.00W-179.88E_50.00N-90.00N_0.00-4000.00m_1991-01-01-2026-03-01.nc",
