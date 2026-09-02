@@ -2,71 +2,136 @@ import numpy as np
 from scipy.optimize import lsq_linear
 
 # -------------------------------------------------------------------------
-# 1. Base End-Member Definitions & Standard Deviations (Variability)
+# 1. Base Reference End-Members & Standard Deviations
 # -------------------------------------------------------------------------
-# Vector Format: [Mass, Salinity, delta18O (‰), Barium (nmol/kg), Total Alkalinity (µmol/kg)]
 base_end_members = {
-    "ATL": np.array([1.0, 34.80, 0.30, 45.0, 2300.0]),  # Atlantic Marine
-    "PAC": np.array([1.0, 32.50, -1.10, 78.0, 2220.0]),  # Pacific Marine
-    "NAM": np.array(
-        [1.0, 0.00, -19.50, 130.0, 1600.0]
-    ),  # North American Rivers (High Ba & TA)
-    "EUR": np.array(
-        [1.0, 0.00, -19.00, 45.0, 800.0]
-    ),  # Eurasian Rivers (Low Ba, Moderate TA)
-    "SIM": np.array(
-        [1.0, 4.00, 2.00, 10.0, 300.0]
-    ),  # Sea Ice Melt / Brine (Low TA)
-    "GLAC": np.array(
-        [1.0, 0.00, -30.00, 2.0, 20.0]
-    ),  # Glacier Melt (Ultra-light isotope, near-zero TA/Ba)
+    "ATL": np.array([1.0, 34.80,  0.30,  45.0, 2300.0]),
+    "PAC": np.array([1.0, 32.50, -1.10,  78.0, 2220.0]),
+    "NAM": np.array([1.0,  0.00,-19.50, 130.0, 1600.0]),
+    "EUR": np.array([1.0,  0.00,-19.00,  45.0,  800.0]),
+    "SIM": np.array([1.0,  4.00,  2.00,  10.0,  300.0]),
+    "GLAC": np.array([1.0, 0.00,-30.00,   2.0,   20.0]),
 }
 
-# Standard deviations capturing natural end-member variability/freshet noise
 end_member_std = {
-    "ATL": np.array([0.0, 0.05, 0.05, 3.0, 10.0]),
-    "PAC": np.array([0.0, 0.30, 0.15, 5.0, 15.0]),
+    "ATL": np.array([0.0, 0.05, 0.05,  3.0,  10.0]),
+    "PAC": np.array([0.0, 0.30, 0.15,  5.0,  15.0]),
     "NAM": np.array([0.0, 0.00, 1.50, 20.0, 150.0]),
-    "EUR": np.array([0.0, 0.00, 1.00, 8.0, 80.0]),
-    "SIM": np.array([0.0, 1.00, 0.50, 3.0, 40.0]),
-    "GLAC": np.array([0.0, 0.00, 2.00, 1.0, 15.0]),
+    "EUR": np.array([0.0, 0.00, 1.00,  8.0,  80.0]),
+    "SIM": np.array([0.0, 1.00, 0.50,  3.0,  40.0]),
+    "GLAC": np.array([0.0, 0.00, 2.00,  1.0,  15.0]),
 }
 
-# Analytical measurement uncertainties (Lab/ML Model Prediction Error)
-# [Mass, Sal, d18O, Ba, TA]
 obs_uncertainty = np.array([0.0, 0.01, 0.05, 1.5, 10.0])
-
-# Solver Weights: [Mass, Sal, d18O, Ba, TA]
-# Note: TA weighted at 4.0 to balance tracer sensitivity without over-fitting biological photic noise
 weights = np.array([100.0, 25.0, 10.0, 5.0, 4.0])
 water_masses = ["ATL", "PAC", "NAM", "EUR", "SIM", "GLAC"]
 
+# -------------------------------------------------------------------------
+# 2. Dynamic End-Member Parameterization
+# -------------------------------------------------------------------------
+def get_dynamic_end_members(lat, lon, depth):
+    """
+    Adjusts base end-member tracer signatures dynamically as a function
+    of geographical coordinates and depth.
+    """
+    # Deep copy base signatures to modify per sample
+    em = {k: v.copy() for k, v in base_end_members.items()}
+
+    # --- A. Atlantic Water Depth / Regional Gradient ---
+    # Framing Fram Strait / Norwegian Sea inflow vs Deep Eurasian Basin Atlantic Water
+    if depth > 500:
+        em["ATL"][1] = 34.91   # Deep Atlantic is slightly saltier
+        em["ATL"][2] = 0.35    # d18O shift in deep basin
+        em["ATL"][4] = 2310.0  # Higher TA due to remineralization/dissolution
+    elif lon < 0: # Atlantic sector / Fram Strait surface
+        em["ATL"][1] = 35.00   # Core North Atlantic Water
+
+    # --- B. Pacific Water Regional Shifts ---
+    # Bering Strait / Chukchi Sea vs Beaufort Gyre Pacific Summer Water (PSW) / Winter Water (PWW)
+    if depth > 100 and depth <= 250:
+        # PWW (Pacific Winter Water) core: colder, nutrient/Ba rich, saltier
+        em["PAC"][1] = 33.10
+        em["PAC"][2] = -0.80
+        em["PAC"][3] = 85.0    # Higher Barium signature in PWW
+    elif depth <= 50:
+        # PSW (Pacific Summer Water): fresher
+        em["PAC"][1] = 31.80
+        em["PAC"][2] = -1.30
+
+    # --- C. River End-Member Regional Gradients ---
+    # Eurasian Rivers: Lena/Yenisei vs Ob (Ob has higher alkalinity)
+    # Longitude check for Western Siberian rivers vs Eastern Siberian rivers
+    if 60 <= lon <= 90: # Ob River dominance zone
+        em["EUR"][4] = 1100.0  # Ob has higher TA (~1100 µmol/kg)
+    elif 120 <= lon <= 140: # Lena River dominance zone
+        em["EUR"][4] = 700.0   # Lena has lower TA (~700 µmol/kg)
+        em["EUR"][3] = 60.0    # Higher Ba in Lena
+
+    # North American Rivers: Mackenzie River vs Alaskan rivers
+    if lon < -120: # Western North American / Mackenzie influence
+        em["NAM"][4] = 1750.0  # High carbonate runoff from Mackenzie Basin
+        em["NAM"][2] = -20.5   # Isotopic depletion increases inland
+
+    return em
+
 
 # -------------------------------------------------------------------------
-# 2. Single Bounded 6-Component OMP Solver
+# 3. Solver with Dynamic Signatures & Bounds
 # -------------------------------------------------------------------------
-def solve_single_6comp_omp(A_raw, obs_raw, min_sim=-0.20):
-    """Solves one 6-component OMP realization with bounds using lsq_linear."""
+def calculate_dynamic_bounds(depth, lon,month=None, dist_chukchi=9999, dist_ru=9999, dist_na=9999):
+    """
+    Adjusts solver bounds dynamically based on depth, location, and seasonality.
+    """
+    # Default minimum SIM based on seasonality if month is provided
+    if month is not None:
+        if month in [6, 7, 8]:  # Summer (June-August): Melt season, no brine rejection
+            min_sim = 0.0
+        elif month in [5, 9, 10]:  # Spring/Autumn (Transition shoulders)
+            min_sim = -0.05
+        else:  # Winter (Nov-May): Active freezing and brine rejection
+            min_sim = -0.20
+    else:
+        min_sim = -0.02  # Default fallback if month is unknown
+
+    lower_bounds = [0.0, 0.0, 0.0, 0.0, min_sim, 0.0]
+    upper_bounds = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+    # 1. Depth & Regional Constraint for Atlantic Water
+    # Atlantic water does not occupy the surface/shelf layers of the Canada Basin / Beaufort Sea (lon < -100)
+    if depth < 150 and lon < -100:
+        upper_bounds[0] = 0.05  # Restrict ATL to < 5% in the surface Beaufort/Canada Basin
+
+    # Depth constraints
+    if depth > 300:
+        upper_bounds[2] = 0.02  # NAM
+        upper_bounds[3] = 0.02  # EUR
+        upper_bounds[4] = 0.05  # SIM
+        upper_bounds[5] = 1e-5  # GLAC (near zero)
+
+    # Geographic constraints
+    if dist_chukchi > 2000:
+        upper_bounds[1] = 0.15  # PAC
+
+    # Allow higher PAC fraction in the surface Beaufort/Chukchi shelf
+    if depth <= 50 and lon < -120:
+        upper_bounds[1] = 1.0  # Allow up to 100% Pacific Surface Water
+
+    return lower_bounds, upper_bounds
+
+
+def solve_single_6comp_omp(A_raw, obs_raw, lower_bounds, upper_bounds):
     mean_vals = np.mean(A_raw, axis=1)
     std_vals = np.std(A_raw, axis=1)
-    std_vals[0] = 1.0  # Keep mass conservation row unscaled
+    std_vals[0] = 1.0
     mean_vals[0] = 0.0
 
-    # Normalization & Weighting
     A_norm = (A_raw - mean_vals[:, None]) / std_vals[:, None]
     A_weighted = A_norm * weights[:, None]
 
     obs_norm = (obs_raw - mean_vals) / std_vals
     obs_weighted = obs_norm * weights
 
-    # Bounds for [ATL, PAC, NAM, EUR, SIM, GLAC]
-    # All marine, river, and glacier fractions >= 0. SIM lower bound permits brine rejection.
-    lower_bounds = [0.0, 0.0, 0.0, 0.0, min_sim, 0.0]
-    upper_bounds = [1.0, 1.0, 1.0, 1.0, 1.00, 1.0]
-
-    res = lsq_linear(
-        A_weighted, obs_weighted, bounds=(lower_bounds, upper_bounds)
-    )
+    res = lsq_linear(A_weighted, obs_weighted, bounds=(lower_bounds, upper_bounds))
     x = res.x
     f_sum = np.sum(x)
 
@@ -74,42 +139,31 @@ def solve_single_6comp_omp(A_raw, obs_raw, min_sim=-0.20):
 
 
 # -------------------------------------------------------------------------
-# 3. Monte Carlo Simulation Engine
+# 4. Monte Carlo Engine Using Dynamic End-Members
 # -------------------------------------------------------------------------
 def run_6comp_monte_carlo(
-    obs_sal, obs_d18O, obs_ba, obs_ta, n_iter=2000, min_sim=-0.20
+    obs_sal, obs_d18O, obs_ba, obs_ta, lat, lon, depth, month=None, n_iter=2000
 ):
-    """Runs N-iteration Monte Carlo OMP simulation for 6 end-members.
-
-    Parameters:
-      obs_sal  : Salinity
-      obs_d18O : delta18O (‰)
-      obs_ba   : Barium (nmol/kg)
-      obs_ta   : Total Alkalinity (µmol/kg)
-      n_iter   : Number of Monte Carlo iterations
-      min_sim  : Lower bound allowed for negative SIM (brine rejection)
-    """
     base_obs = np.array([1.0, obs_sal, obs_d18O, obs_ba, obs_ta])
     results = np.zeros((n_iter, 6))
 
+    # Get local dynamic end-members for this specific (Lat, Lon, Depth)
+    dynamic_end_members = get_dynamic_end_members(lat, lon, depth)
+    lb, ub = calculate_dynamic_bounds(depth=depth, lon=lon,month=month)
+
     for i in range(n_iter):
-        # A. Perturb 6 End-Members with Gaussian distribution
         A_perturbed = np.zeros((5, 6))
         for j, wm in enumerate(water_masses):
             noise = np.random.normal(0, end_member_std[wm])
-            A_perturbed[:, j] = base_end_members[wm] + noise
+            # Perturb around the dynamically computed mean tracer values
+            A_perturbed[:, j] = dynamic_end_members[wm] + noise
 
-        # B. Perturb Sample Observations (Analytical / ML prediction noise)
         obs_noise = np.random.normal(0, obs_uncertainty)
         obs_perturbed = base_obs + obs_noise
 
-        # C. Solve OMP for perturbed realization
-        fractions = solve_single_6comp_omp(
-            A_perturbed, obs_perturbed, min_sim=min_sim
-        )
+        fractions = solve_single_6comp_omp(A_perturbed, obs_perturbed, lb, ub)
         results[i, :] = fractions
 
-    # D. Summary Statistics
     summary = {}
     for j, wm in enumerate(water_masses):
         summary[wm] = {
@@ -122,32 +176,38 @@ def run_6comp_monte_carlo(
 
 
 # -------------------------------------------------------------------------
-# 4. Example Run: Fjord/Shelf Profile with Glacial Runoff
+# 5. Example Execution: Mackenzie River Delta Surface Sample
 # -------------------------------------------------------------------------
-# Sample Observation: Mixed surface layer with Pacific, North American River, and Greenland Glacial Discharge
-sample_sal = 28.5
-sample_d18O = -4.5
-sample_ba = 128.0
-sample_ta = 1350.0  # Reduced TA driven by zero-alkalinity glacier melt dilution
+# Sample collected near the Mackenzie River mouth (Lat: 70°N, Lon: -135°W, Depth: 10m)
+sample_sal = 22.0
+sample_d18O = -12.0
+sample_ba = 110.0
+sample_ta = 1700.0
+month = 7
+
+# Sample collected near the Mackenzie River mouth in January (Lat: 70°N, Lon: -135°W, Depth: 10m)
+sample_sal = 31.5       # Much higher salinity due to winter mixing and lack of summer freshet
+sample_d18O = -2.5      # Much less depleted (river input is minimal, mostly marine/winter baseflow)
+sample_ba = 55.0        # Lower barium, reflecting lower winter river discharge
+sample_ta = 2150.0      # Higher alkalinity, closer to marine water values
+month = 1               # Triggers winter rules (min_sim = -0.20)
 
 stats, mc_runs = run_6comp_monte_carlo(
     obs_sal=sample_sal,
     obs_d18O=sample_d18O,
     obs_ba=sample_ba,
     obs_ta=sample_ta,
+    lat=70.0,
+    lon=-135.0,
+    depth=10.0,
     n_iter=2000,
-    min_sim=-0.20,
+    month=month
 )
 
-# Print Summary
-print(
-    f"{'Water Mass':<14} | {'Mean Fraction':<15} | {'Std Dev (±)':<12} | {'95% CI Range':<20}"
-)
+print(f"{'Water Mass':<14} | {'Mean Fraction':<15} | {'Std Dev (±)':<12} | {'95% CI Range':<20}")
 print("-" * 69)
 for wm in water_masses:
     m = stats[wm]["mean"] * 100
     s = stats[wm]["std"] * 100
     ci_low, ci_high = stats[wm]["ci_95"] * 100
-    print(
-        f"{wm:<14} | {m:>6.2f}%         | ±{s:>5.2f}%      | [{ci_low:>6.2f}%, {ci_high:>6.2f}%]"
-    )
+    print(f"{wm:<14} | {m:>6.2f}%         | ±{s:>5.2f}%      | [{ci_low:>6.2f}%, {ci_high:>6.2f}%]")

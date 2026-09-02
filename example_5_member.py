@@ -8,25 +8,30 @@ import numba
 # 1. Base Setup & Parameters (5 Tracers, 5 End Members)
 # Tracers: [Mass (1.0), Salinity, d18O, Barium, Potential Temp (degC)]
 # -------------------------------------------------------------------------
+# Columns: [Mass, SALT, d18O (‰), Ba (nmol/kg), PTemp (°C)]
 base_end_members = {
-    #                [Mass,   SALT,   d18O,    Ba,    PTemp]
-    "ATL": np.array([ 1.0,  34.80,   0.30,  40.0,    5.00 ]),
-    "PAC": np.array([ 1.0,  32.50,  -1.10,  65.0,    2.50 ]),
-    "NAM": np.array([ 1.0,   0.00, -19.50, 90.0,    0.00 ]),
-    "EUR": np.array([ 1.0,   0.00, -19.00,  45.0,    0.00 ]),
-    "SIM": np.array([ 1.0,   4.00,   2.00,  10.0,   -1.80 ]),
+    "ATL": np.array([1.0, 34.80,   0.30,  48.0,  2.50]),  # Atlantic Water (Fram Strait / Barents)
+    "PAC": np.array([1.0, 32.50,  -1.10,  75.0,  0.50]),  # Pacific Summer/Halocline Water
+    "NAM": np.array([1.0,  0.00, -20.50,  95.0,  0.00]),  # North American River Runoff
+    "EUR": np.array([1.0,  0.00, -17.50,  45.0,  0.00]),  # Eurasian River Runoff
+    "SIM": np.array([1.0,  4.00,   0.80,   5.0, -1.80]),  # Sea Ice Meltwater
 }
+# Columns: [Mass, SALT, d18O (‰), Ba (nmol/kg), PTemp (°C)]
 end_member_std = {
-    #                [Mass,   SALT,   d18O,    Ba,    PTemp]
-    "ATL": np.array([ 0.0,   0.05,   0.05,   3.0,    0.30 ]),
-    "PAC": np.array([ 0.0,   0.30,   0.15,   5.0,    0.50 ]),
-    "NAM": np.array([ 0.0,   0.00,   1.50,  20.0,    1.00 ]),
-    "EUR": np.array([ 0.0,   0.00,   1.00,   8.0,    1.00 ]),
-    "SIM": np.array([ 0.0,   1.00,   0.50,   3.0,    0.20 ]),
+    "ATL": np.array([0.0, 0.05, 0.05,  3.0, 0.50]),  # Higher PTemp variance due to warming/pulses
+    "PAC": np.array([0.0, 0.30, 0.15,  5.0, 0.50]),  # Solid for Pacific Upper Halocline/Summer Water
+    "NAM": np.array([0.0, 0.00, 1.50, 10.0, 1.00]),  # Reduced Ba uncertainty to reflect flow-weighted mean
+    "EUR": np.array([0.0, 0.00, 1.20, 10.0, 1.00]),  # Slightly increased Ba/d18O to reflect multi-river blend
+    "SIM": np.array([0.0, 1.00, 0.80,  3.0, 0.10]),  # Increased d18O spread (FYI vs MYI), reduced PTemp
 }
 water_masses = ["ATL", "PAC", "NAM", "EUR", "SIM"]
+
+# Column Order: [Mass, SALT, d18O, Ba, PTemp]
+# 1. Observational/Measurement Uncertainty
 obs_uncertainty = np.array([0.0, 0.01, 0.05, 1.5, 0.02])
-parameter_weights = np.array([100.0, 25.0, 15.0, 10.0, 20.0])
+# 2. Recommended Parameter Weights for OMP / pyOMP
+# Normalized such that Mass = 100.0 (or 1.0 depending on solver scaling)
+parameter_weights = np.array([100.0, 25.0, 30.0, 10.0, 8.0])
 
 A_base = np.column_stack([base_end_members[wm] for wm in water_masses])
 A_std_matrix = np.column_stack([end_member_std[wm] for wm in water_masses])
@@ -134,7 +139,7 @@ if __name__ == "__main__":
 
     MONTH = "09"
     YEAR = "2016"
-    DEPTH = 100
+    DEPTH = 10
 
     # 2. Open Datasets WITH CHUNKS (Crucial for Dask)
     # Choose chunk sizes based on spatial/time dimensions (e.g. chunking spatial dimensions)

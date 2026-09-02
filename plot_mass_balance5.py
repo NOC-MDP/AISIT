@@ -18,7 +18,7 @@ FULL_NAMES = {
 }
 YEAR = "2016"
 MONTH = "09"
-DEPTH = 100
+DEPTH = 10
 FILE_PATH = f"/gws/ssde/j25a/nemo/vol4/thopri/MASSBAL/watermass_fractions_depth_{DEPTH}_{YEAR}_{MONTH}.nc"
 OUTPUT_PLOT = "arctic_water_mass_fractions_and_uncertainty.png"
 
