@@ -86,15 +86,19 @@ def calculate_dynamic_bounds(depth, lon,month=None, dist_chukchi=9999, dist_ru=9
     if month is not None:
         if month in [6, 7, 8]:  # Summer (June-August): Melt season, no brine rejection
             min_sim = 0.0
+            glac_upper = 0.15  # Allow glacial melt in summer
         elif month in [5, 9, 10]:  # Spring/Autumn (Transition shoulders)
             min_sim = -0.05
+            glac_upper = 0.05  # Shoulder seasons
         else:  # Winter (Nov-May): Active freezing and brine rejection
             min_sim = -0.20
+            glac_upper = 0.001 # Winter: Shut off glacial melt!
     else:
         min_sim = -0.02  # Default fallback if month is unknown
+        glac_upper = 1.0
 
     lower_bounds = [0.0, 0.0, 0.0, 0.0, min_sim, 0.0]
-    upper_bounds = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    upper_bounds = [1.0, 1.0, 1.0, 1.0, 1.0, glac_upper]
 
     # 1. Depth & Regional Constraint for Atlantic Water
     # Atlantic water does not occupy the surface/shelf layers of the Canada Basin / Beaufort Sea (lon < -100)
@@ -178,12 +182,34 @@ def run_6comp_monte_carlo(
 # -------------------------------------------------------------------------
 # 5. Example Execution: Mackenzie River Delta Surface Sample
 # -------------------------------------------------------------------------
-# Sample collected near the Mackenzie River mouth (Lat: 70°N, Lon: -135°W, Depth: 10m)
+# Sample collected near the Mackenzie River mouth in July (Lat: 70°N, Lon: -135°W, Depth: 10m)
 sample_sal = 22.0
 sample_d18O = -12.0
 sample_ba = 110.0
 sample_ta = 1700.0
 month = 7
+
+
+
+stats, mc_runs = run_6comp_monte_carlo(
+    obs_sal=sample_sal,
+    obs_d18O=sample_d18O,
+    obs_ba=sample_ba,
+    obs_ta=sample_ta,
+    lat=70.0,
+    lon=-135.0,
+    depth=10.0,
+    n_iter=2000,
+    month=month
+)
+print(f"{'Month':<14} {month}")
+print(f"{'Water Mass':<14} | {'Mean Fraction':<15} | {'Std Dev (±)':<12} | {'95% CI Range':<20}")
+print("-" * 69)
+for wm in water_masses:
+    m = stats[wm]["mean"] * 100
+    s = stats[wm]["std"] * 100
+    ci_low, ci_high = stats[wm]["ci_95"] * 100
+    print(f"{wm:<14} | {m:>6.2f}%         | ±{s:>5.2f}%      | [{ci_low:>6.2f}%, {ci_high:>6.2f}%]")
 
 # Sample collected near the Mackenzie River mouth in January (Lat: 70°N, Lon: -135°W, Depth: 10m)
 sample_sal = 31.5       # Much higher salinity due to winter mixing and lack of summer freshet
@@ -203,7 +229,7 @@ stats, mc_runs = run_6comp_monte_carlo(
     n_iter=2000,
     month=month
 )
-
+print(f"{'Month':<14} {month}")
 print(f"{'Water Mass':<14} | {'Mean Fraction':<15} | {'Std Dev (±)':<12} | {'95% CI Range':<20}")
 print("-" * 69)
 for wm in water_masses:
